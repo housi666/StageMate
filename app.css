@@ -1,4 +1,4 @@
-/*! StageMate v0.6.1 · Build 80 · 2026-11-26 */
+/*! StageMate v0.6.2 · Build 81 · 2026-11-26 */
   :root {
     --sidebar-w: 248px;
     --sidebar-w-collapsed: 68px;
@@ -1780,3 +1780,7 @@
 .hc-d.holy:not(.sel), .hc-w.holy { color: #e04646; }
 .hc-d.holy:not(.sel) { background: rgba(224, 70, 70, .08); }
 .stage-bar .btn { white-space: nowrap; }
+/* v0.6.2 Schriftzug StageMate (Schrift Over There, als Pfad) */
+.wordmark { display: block; height: 22px; width: 136px; max-width: none; flex: none; color: #fff; }
+.hero-brand .name .wordmark { height: 26px; width: 161px; }
+.hub-name .wordmark { height: 20px; width: 124px; }
