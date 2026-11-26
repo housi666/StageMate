@@ -1,4 +1,4 @@
-/*! StageMate v0.6.0 · Build 79 · 2026-11-23 */
+/*! StageMate v0.6.1 · Build 80 · 2026-11-26 */
 /* StageMate – App-Logik (Oberfläche, Register, Rechte) */
   // Version, Build und Changelog kommen aus js/version.js
   document.querySelectorAll('[data-app-version]').forEach(n => { n.textContent = APP_VERSION; n.title = `${APP_PHASE} · Build ${APP_BUILD} · ${APP_BUILD_DATE}`; });
@@ -1525,10 +1525,11 @@
     pv.addEventListener('click', () => { hubCalM = new Date(y, m - 1, 1); renderHubCal(); }); nx.addEventListener('click', () => { hubCalM = new Date(y, m + 1, 1); renderHubCal(); });
     ad.addEventListener('click', () => hubPersEdit(null, hubCalSel));
     head.append(pv, el('b', null, first.toLocaleDateString('de-CH', { month: 'long', year: 'numeric' })), nx, ad);
-    const grid = el('div', 'hc-grid'); ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'].forEach(w => grid.append(el('div', 'hc-w', w)));
+    const grid = el('div', 'hc-grid'); ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'].forEach((w, i) => grid.append(el('div', 'hc-w' + (i === 6 ? ' holy' : ''), w)));
     for (let i = 0; i < (first.getDay() + 6) % 7; i++) grid.append(el('div', 'hc-e'));
     for (let d = 1; d <= last.getDate(); d++) {
-      const k = dKey(new Date(y, m, d)), n = (items[k] || []).length, b = el('button', 'hc-d' + (k === dKey(now) ? ' today' : '') + (k === hubCalSel ? ' sel' : '') + (n ? ' has' : '')); b.type = 'button';
+      const dd = new Date(y, m, d), hn = holidayName(dd), k = dKey(dd), n = (items[k] || []).length, b = el('button', 'hc-d' + (k === dKey(now) ? ' today' : '') + (k === hubCalSel ? ' sel' : '') + (n ? ' has' : '') + (hn || dd.getDay() === 0 ? ' holy' : '')); b.type = 'button';
+      if (hn) b.title = hn;
       b.append(String(d)); if (n) b.append(el('i', null, String(n)));
       b.addEventListener('click', () => { hubCalSel = k; renderHubCal(); }); grid.append(b);
     }
@@ -2947,10 +2948,32 @@
     const L = slCur(); if (!L) return;
     const T = slTimes(L), rows = T.rows; if (!rows.length) return flash('Die Setlist ist leer', true);
     let i = 0, wl = null;
+    // Uhr: Play startet, Pause hält an, Stopp setzt auf den ersten Eintrag und 0:00 zurück
+    let run = false, setMs = 0, songMs = 0, t0 = 0, tick = null;
     const ov = el('div', 'stage-ov'), tag = el('div', 'stage-top'), main = el('div', 'stage-main'), nxt = el('div', 'stage-next'), bar = el('div', 'stage-bar');
+    const clock = el('div', 'stage-clock'), cSong = el('div', 'stage-c'), cSet = el('div', 'stage-c'), prog = el('div', 'stage-prog'), progI = el('i');
+    prog.appendChild(progI); clock.append(cSong, cSet);
     const prev = el('button', 'btn', '◀ Zurück'), next = el('button', 'btn', 'Weiter ▶'), close = el('button', 'btn ghost', '✕ Schliessen');
-    [prev, next, close].forEach(b => b.type = 'button'); bar.append(prev, close, next); ov.append(tag, main, nxt, bar); document.body.appendChild(ov);
+    const play = el('button', 'btn stage-play', '▶ Play'), stop = el('button', 'btn', '■ Stopp');
+    const tr = el('div', 'stage-tr'); tr.append(play, stop);
+    [prev, next, close, play, stop].forEach(b => b.type = 'button'); bar.append(prev, tr, close, next); ov.append(tag, clock, prog, main, nxt, bar); document.body.appendChild(ov);
     const name = r => (r.it.title || SL_TYPES[r.it.type].label) + (r.it.artist ? ' – ' + r.it.artist : '');
+    const mmss = ms => { const t = Math.floor(ms / 1000); return Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0'); };
+    const now = () => performance.now();
+    function times() {
+      const d = run ? now() - t0 : 0, sm = songMs + d, st = setMs + d, dur = (rows[i].it.dur || 0) * 1000;
+      cSong.textContent = 'Eintrag ' + mmss(sm) + (dur ? ' / ' + mmss(dur) : '');
+      cSet.textContent = 'Set ' + mmss(st) + (T.total ? ' / ' + slFmt(T.total) : '');
+      cSong.classList.toggle('over', !!dur && sm > dur);
+      progI.style.width = dur ? Math.min(100, sm / dur * 100) + '%' : '0%';
+      prog.classList.toggle('over', !!dur && sm > dur);
+    }
+    function setRun(on) {
+      if (on === run) return;
+      if (on) { t0 = now(); tick = setInterval(times, 250); }
+      else { const d = now() - t0; songMs += d; setMs += d; clearInterval(tick); tick = null; }
+      run = on; play.textContent = run ? '❚❚ Pause' : '▶ Play'; play.classList.toggle('on', run); ov.classList.toggle('running', run); times();
+    }
     function draw() {
       const r = rows[i];
       tag.textContent = `${i + 1} / ${rows.length}${r.clock ? ' · ' + r.clock : ''} · ${L.name || 'Setlist'}`;
@@ -2959,12 +2982,22 @@
       if (r.it.note) main.append(el('div', 'stage-n', r.it.note));
       nxt.textContent = rows[i + 1] ? 'Als Nächstes: ' + name(rows[i + 1]) : 'Letzter Eintrag';
       prev.disabled = i === 0; next.disabled = i === rows.length - 1;
+      times();
     }
-    const go = d => { i = Math.max(0, Math.min(rows.length - 1, i + d)); draw(); };
-    function end() { document.removeEventListener('keydown', key, true); try { wl && wl.release(); } catch (e) {} ov.remove(); }
-    function key(e) { if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') { e.preventDefault(); go(1); } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); go(-1); } else if (e.key === 'Escape') end(); }
+    // Beim Weiterschalten beginnt die Eintragszeit neu, die Setzeit läuft weiter
+    const go = d => { const j = Math.max(0, Math.min(rows.length - 1, i + d)); if (j === i) return; if (run) { setMs += now() - t0; t0 = now(); } songMs = 0; i = j; draw(); };
+    function doStop() { if (run) setRun(false); setMs = 0; songMs = 0; i = 0; draw(); }
+    function end() { document.removeEventListener('keydown', key, true); clearInterval(tick); try { wl && wl.release(); } catch (e) {} ov.remove(); }
+    function key(e) {
+      if (e.key === 'ArrowRight' || e.key === 'PageDown') { e.preventDefault(); go(1); }
+      else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); go(-1); }
+      else if (e.key === ' ' || e.key === 'k' || e.key === 'K') { e.preventDefault(); setRun(!run); }
+      else if (e.key === 's' || e.key === 'S') { e.preventDefault(); doStop(); }
+      else if (e.key === 'Escape') end();
+    }
     document.addEventListener('keydown', key, true);
     prev.addEventListener('click', e => { e.stopPropagation(); go(-1); }); next.addEventListener('click', e => { e.stopPropagation(); go(1); }); close.addEventListener('click', e => { e.stopPropagation(); end(); });
+    play.addEventListener('click', e => { e.stopPropagation(); setRun(!run); }); stop.addEventListener('click', e => { e.stopPropagation(); doStop(); });
     let x0 = null; ov.addEventListener('touchstart', e => { x0 = e.touches[0].clientX; }, { passive: true });
     ov.addEventListener('touchend', e => { if (x0 == null) return; const dx = e.changedTouches[0].clientX - x0; x0 = null; if (Math.abs(dx) > 50) go(dx < 0 ? 1 : -1); });
     main.addEventListener('click', () => go(1));
@@ -4407,6 +4440,25 @@
     $('calAddDay').classList.toggle('pv-locked', !canEditCalendar() || !!viewAs);
   }
 
+  // Sonn- und Feiertage (Schweiz, allgemein verbreitete Feiertage; kantonale fehlen noch)
+  function easter(y) {
+    const a = y % 19, b = Math.floor(y / 100), c = y % 100, d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3),
+      h = (19 * a + b - d - g + 15) % 30, i = Math.floor(c / 4), k = c % 4, l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451),
+      mo = Math.floor((h + l - 7 * m + 114) / 31), da = ((h + l - 7 * m + 114) % 31) + 1;
+    return new Date(y, mo - 1, da);
+  }
+  function holidaysOf(y) {
+    const holCache = holidaysOf.c || (holidaysOf.c = {}); if (holCache[y]) return holCache[y];
+    const o = {}, add = (d, n) => { o[dKey(d)] = n; }, E = easter(y);
+    add(new Date(y, 0, 1), 'Neujahr'); add(new Date(y, 0, 2), 'Berchtoldstag');
+    add(addDays(E, -2), 'Karfreitag'); add(E, 'Ostersonntag'); add(addDays(E, 1), 'Ostermontag');
+    add(addDays(E, 39), 'Auffahrt'); add(addDays(E, 49), 'Pfingstsonntag'); add(addDays(E, 50), 'Pfingstmontag');
+    add(new Date(y, 7, 1), 'Bundesfeier (1. August)'); add(new Date(y, 11, 25), 'Weihnachten'); add(new Date(y, 11, 26), 'Stephanstag');
+    return (holCache[y] = o);
+  }
+  function holidayName(d) { return holidaysOf(d.getFullYear())[dKey(d)] || ''; }
+  function calTip(d) { return fmtLong(d) + (holidayName(d) ? ' · ' + holidayName(d) : ''); }
+
   function dayCell(d, cls, onClick) {
     const today = new Date();
     const b = el('button', 'cal-day' + (cls ? ' ' + cls : ''));
@@ -4415,7 +4467,9 @@
     if (sameDay(d, today)) b.classList.add('today');
     if (sameDay(d, calSel)) b.classList.add('sel');
     if (wdIdx(d) >= 5) b.classList.add('weekend');
-    b.title = fmtLong(d);
+    if (wdIdx(d) === 6 || holidayName(d)) b.classList.add('holy');
+    if (holidayName(d)) b.classList.add('hol');
+    b.title = calTip(d);
     b.addEventListener('click', e => { e.stopPropagation(); onClick(d); });
     return b;
   }
@@ -4426,7 +4480,7 @@
     const map = eventsByDay(start, addDays(start, 41));
     const grid = el('div', 'cal-month');
     grid.appendChild(el('div', 'cal-head kw', 'KW'));
-    CAL_WD.forEach((w, i) => grid.appendChild(el('div', 'cal-head' + (i >= 5 ? ' weekend' : ''), w)));
+    CAL_WD.forEach((w, i) => grid.appendChild(el('div', 'cal-head' + (i >= 5 ? ' weekend' : '') + (i === 6 ? ' holy' : ''), w)));
     for (let r = 0; r < 6; r++) {
       const ws = addDays(start, r * 7);
       const kw = el('button', 'cal-kw', String(isoWeek(ws))); kw.type = 'button'; kw.title = 'Woche anzeigen';
@@ -4437,7 +4491,7 @@
         // Einfacher Klick: nur auswählen (unten erscheinen die Termine). Doppelklick: Wochenansicht.
         const cell = dayCell(d, d.getMonth() !== first.getMonth() ? 'other' : '', x => selectInMonth(x, cell));
         cell.addEventListener('dblclick', e => { e.stopPropagation(); calSelect(d, 'week'); });
-        cell.title = fmtLong(d) + ' – Doppelklick: Wochenansicht';
+        cell.title = calTip(d) + ' – Doppelklick: Wochenansicht';
         const items = map[dKey(d)] || [];
         if (items.length) {
           const box = el('div', 'cal-evs');
@@ -4495,7 +4549,7 @@
       t.title = 'Doppelklick: Monat anzeigen';
       card.appendChild(t);
       const g = el('div', 'cal-mini-grid');
-      CAL_WD.forEach(w => g.appendChild(el('div', 'cal-mini-wd', w[0])));
+      CAL_WD.forEach((w, i) => g.appendChild(el('div', 'cal-mini-wd' + (i === 6 ? ' holy' : ''), w[0])));
       const first = new Date(y, m, 1);
       for (let i = 0; i < wdIdx(first); i++) g.appendChild(el('div'));
       const days = new Date(y, m + 1, 0).getDate();
@@ -4511,7 +4565,7 @@
           cell.classList.add('has-ev');
           if (colors.length === 1) cell.style.background = colors[0];
           else { cell.style.background = colors[0]; cell.style.animation = `${cycleAnim(colors)} ${colors.length * 2.4}s ease-in-out infinite`; }
-          cell.title = fmtLong(date) + ' – ' + items.map(it => it.ev.title || 'Termin').join(', ');
+          cell.title = calTip(date) + ' – ' + items.map(it => it.ev.title || 'Termin').join(', ');
         }
         g.appendChild(cell);
       }

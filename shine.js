@@ -1,12 +1,12 @@
-/*! StageMate v0.6.0 · Build 79 · 2026-11-23 */
+/*! StageMate v0.6.1 · Build 80 · 2026-11-26 */
 /* Glänzende Display-Knöpfe (Regelwerk): Farbe je Aufgabe, ein gemeinsamer Lichtstreifen für alle Knöpfe einer Seite. */
 (function () {
   'use strict';
   // Farbe nach Aufgabe: Wörter im Knopftext oder Klassen entscheiden. Ein festes data-tone im HTML hat Vorrang.
   const RULES = [
-    ['red',    /(löschen|entfernen|verlassen|auflösen|abmelden|sperren|zurücksetzen)/],
+    ['red',    /(löschen|entfernen|verlassen|auflösen|abmelden|sperren|zurücksetzen|stopp)/],
     ['slate',  /^(abbrechen|schliessen|zurück|verwerfen|nein|später|ablehnen|zuklappen|alle zuklappen|×|✕)/],
-    ['green',  /(speichern|übernehmen|hinzufügen|erstellen|anlegen|aufnehmen|beitreten|gründen|bestätigen|registrieren|anmelden|akzeptieren|^ok$|^ja$|^\+|^neue)/],
+    ['green',  /(speichern|übernehmen|hinzufügen|erstellen|anlegen|aufnehmen|beitreten|gründen|bestätigen|registrieren|anmelden|akzeptieren|^ok$|^ja$|^\+|^neue|play|pause)/],
     ['blue',   /(export|csv|json|word|pdf|text|drucken|herunterladen|teilen|download|kopieren)/],
     ['violet', /(import|bühnenmodus|tutorial|entwickler|vorschau|in eine rolle)/],
     ['teal',   /(bearbeiten|✎|ändern|wählen|auswahl|sortieren|suchen|filter|anzeigen|öffnen|springe|zum )/]

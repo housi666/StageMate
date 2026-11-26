@@ -1,16 +1,22 @@
-/*! StageMate v0.6.0 · Build 79 · 2026-11-23 */
+/*! StageMate v0.6.1 · Build 80 · 2026-11-26 */
 /* StageMate – Version, Build und Changelog
  * Wird von bump.sh automatisch angepasst (APP_VERSION, APP_BUILD, APP_BUILD_DATE).
  * Versionsregel: kleine Änderung = letzte Zahl +1, grössere Änderung = mittlere Zahl +1,
  * die erste Zahl bestimmt Housi.
  */
-const APP_VERSION = 'v0.6.0';
-const APP_BUILD = 79;
-const APP_BUILD_DATE = '2026-11-23';
+const APP_VERSION = 'v0.6.1';
+const APP_BUILD = 80;
+const APP_BUILD_DATE = '2026-11-26';
 const APP_PHASE = 'Alpha';
 
 // Neueste Version zuerst. Typen: neu | besser | fix | intern
 const APP_CHANGELOG = [
+  { version: 'v0.6.1', date: '2026-11-26', items: [
+    { type: 'neu', text: 'Kalender: Sonntage und Feiertage sind in der Monats- und Jahresansicht rot markiert; der Name des Feiertags steht im Hinweis beim Darüberfahren (allgemeine Schweizer Feiertage, kantonale fehlen noch).' },
+    { type: 'neu', text: 'Bühnenmodus: Play, Pause und Stopp. Die Uhr zeigt die Zeit des Eintrags (mit Balken gegen die geplante Länge, rot bei Überzug) und die Zeit des ganzen Sets. Leertaste = Play/Pause, S = Stopp.' },
+    { type: 'besser', text: 'Song erfassen: Auswahl Album/EP/Single schmaler, das Namensfeld daneben breiter.' },
+    { type: 'intern', text: 'Veralteten Hinweis „Word folgt“ bei den Setlist-Exporten entfernt (Word gibt es bereits).' }
+  ] },
   { version: 'v0.6.0', date: '2026-11-23', items: [
     { type: 'neu', text: 'Neues Design der Knöpfe: dunkle Glasfläche mit Glanz und einem langsamen Lichtstreifen, der für alle Knöpfe einer Seite als eine gemeinsame Linie läuft. Bei „weniger Bewegung“ im Gerät steht der Streifen still.' },
     { type: 'neu', text: 'Jeder Knopf hat eine Farbe nach seiner Aufgabe: Grün speichern und hinzufügen, Rot löschen, Blau exportieren, Violett Import und Sonderfunktionen, Petrol Bearbeiten und Auswählen, Grau Abbrechen und Zurück, Bernstein Hauptaktionen.' },
