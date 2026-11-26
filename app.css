@@ -1,4 +1,4 @@
-/*! StageMate v0.5.4 · Build 78 · 2026-11-19 */
+/*! StageMate v0.6.0 · Build 79 · 2026-11-23 */
   :root {
     --sidebar-w: 248px;
     --sidebar-w-collapsed: 68px;
@@ -1717,3 +1717,42 @@
 #slFromTpl { max-width: 190px; }
 
 .alpha-wichtig{font-size:34px;font-weight:700;letter-spacing:.08em;color:#c0392b;text-align:center;line-height:1.1;margin:2px 0 6px}
+
+
+/* ===== Glänzende Display-Knöpfe (v0.6.0, Regelwerk): dunkle Glasfläche, Glanzschicht, gemeinsamer Lichtstreifen ===== */
+@property --sh-t { syntax: '<length>'; inherits: true; initial-value: -200px; }
+:root { animation: sh-run 14s linear infinite; }
+@keyframes sh-run { from { --sh-t: -200px; } to { --sh-t: 2800px; } }
+.btn[data-tone], .btn { --tone: #e8a33d; }
+.btn[data-tone="green"]  { --tone: #22b04a; }
+.btn[data-tone="red"]    { --tone: #e04646; }
+.btn[data-tone="blue"]   { --tone: #2a6bff; }
+.btn[data-tone="violet"] { --tone: #9040f0; }
+.btn[data-tone="teal"]   { --tone: #1ba3a8; }
+.btn[data-tone="slate"]  { --tone: #7d8296; }
+.btn[data-tone="amber"]  { --tone: #e8a33d; }
+.btn.btn.btn {
+  --sh: calc(var(--sh-t) - var(--shx, 0px));
+  position: relative; overflow: hidden;
+  background:
+    linear-gradient(120deg, transparent calc(var(--sh) - 38px), rgba(255,255,255,.30) var(--sh), transparent calc(var(--sh) + 38px)),
+    linear-gradient(180deg, rgba(255,255,255,.20) 0%, rgba(255,255,255,.05) 48%, rgba(255,255,255,0) 50%),
+    linear-gradient(180deg, color-mix(in srgb, var(--tone) 34%, #15161c) 0%, color-mix(in srgb, var(--tone) 14%, #0c0d11) 100%);
+  border: 1px solid color-mix(in srgb, var(--tone) 70%, transparent);
+  color: color-mix(in srgb, var(--tone) 38%, #ffffff);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.14), 0 1px 2px rgba(0,0,0,.35);
+  text-shadow: 0 1px 1px rgba(0,0,0,.45);
+  transition: border-color .12s, color .12s, filter .12s;
+}
+.btn.btn.btn:hover { filter: brightness(1.14); background:
+    linear-gradient(120deg, transparent calc(var(--sh) - 38px), rgba(255,255,255,.30) var(--sh), transparent calc(var(--sh) + 38px)),
+    linear-gradient(180deg, rgba(255,255,255,.20) 0%, rgba(255,255,255,.05) 48%, rgba(255,255,255,0) 50%),
+    linear-gradient(180deg, color-mix(in srgb, var(--tone) 34%, #15161c) 0%, color-mix(in srgb, var(--tone) 14%, #0c0d11) 100%); }
+.btn.btn.btn:disabled { opacity: .5; filter: grayscale(.4); }
+@media (prefers-reduced-motion: reduce) { :root { animation: none; } }
+
+/* Klick-Animation: Rand und Text in der Akzentfarbe, Knopf 1 px nach unten; gilt für alle klickbaren Knöpfe und Flächen */
+.btn.btn.btn:active { border-color: var(--accent); color: var(--accent); transform: translateY(1px); }
+.chip:active, .nav-item:active, summary:active, .gig-head:active, .ag-row:active, .cl-ib:active, .tt-row:active, .quick-btn:active, .sl-card:active, .bov-card:active, .seg button:active {
+  border-color: var(--accent); color: var(--accent);
+}

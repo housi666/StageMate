@@ -1,16 +1,21 @@
-/*! StageMate v0.5.4 · Build 78 · 2026-11-19 */
+/*! StageMate v0.6.0 · Build 79 · 2026-11-23 */
 /* StageMate – Version, Build und Changelog
  * Wird von bump.sh automatisch angepasst (APP_VERSION, APP_BUILD, APP_BUILD_DATE).
  * Versionsregel: kleine Änderung = letzte Zahl +1, grössere Änderung = mittlere Zahl +1,
  * die erste Zahl bestimmt Housi.
  */
-const APP_VERSION = 'v0.5.4';
-const APP_BUILD = 78;
-const APP_BUILD_DATE = '2026-11-19';
+const APP_VERSION = 'v0.6.0';
+const APP_BUILD = 79;
+const APP_BUILD_DATE = '2026-11-23';
 const APP_PHASE = 'Alpha';
 
 // Neueste Version zuerst. Typen: neu | besser | fix | intern
 const APP_CHANGELOG = [
+  { version: 'v0.6.0', date: '2026-11-23', items: [
+    { type: 'neu', text: 'Neues Design der Knöpfe: dunkle Glasfläche mit Glanz und einem langsamen Lichtstreifen, der für alle Knöpfe einer Seite als eine gemeinsame Linie läuft. Bei „weniger Bewegung“ im Gerät steht der Streifen still.' },
+    { type: 'neu', text: 'Jeder Knopf hat eine Farbe nach seiner Aufgabe: Grün speichern und hinzufügen, Rot löschen, Blau exportieren, Violett Import und Sonderfunktionen, Petrol Bearbeiten und Auswählen, Grau Abbrechen und Zurück, Bernstein Hauptaktionen.' },
+    { type: 'besser', text: 'Klick-Rückmeldung: Beim Drücken zeigen Knöpfe, Reiter, aufklappbare Kopfzeilen und Karten einen Rand und Text in der Akzentfarbe.' }
+  ] },
   { version: 'v0.5.4', date: '2026-11-19', items: [
     { type: 'intern', text: 'Neues Firebase-Projekt (stagemate-d0a66, Region Zürich) mit neuer Verbindung. Konten und Daten aus dem alten Projekt kommen nicht mit, Registrierung neu nötig.' },
     { type: 'intern', text: 'Diagnose-Anzeige liest den Projektnamen aus der Verbindung statt fest eingetragen.' }
