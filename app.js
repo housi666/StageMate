@@ -3096,16 +3096,179 @@
     return new Blob([u8], { type: 'application/pdf' });
   }
   // ==DOCX-PDF-END
-  // Export: Text, CSV, JSON, PDF
-  document.querySelectorAll('[data-slx]').forEach(b => b.addEventListener('click', () => {
-    const L = slCur(); if (!L) return; const T = slTimes(L), kind = b.dataset.slx;
+  // ================= Export (v0.6.2): ein Fenster für alle Seiten =================
+  // Gleiche Dateinamen überall: Bereich_Name[_Datum].ext, z. B. Setlist_Bergfest-Interlaken_2026-12-08.pdf
+  const xSlug = t => String(t || '').normalize('NFC').replace(/[^\p{L}\p{N}]+/gu, '-').replace(/^-+|-+$/g, '').slice(0, 50);
+  function xFile(area, name, date, ext) { return [area, xSlug(name), date ? xSlug(date) : ''].filter(Boolean).join('_') + '.' + ext; }
+  async function xSave(filename, data, type) {
+    const res = await Data.saveFile({ filename, data, type: type || (data instanceof Blob ? data.type : 'text/plain;charset=utf-8') });
+    if (res === 'saved' || res === 'browser') flash('Exportiert: ' + filename);
+    else flash(res === 'declined' ? 'Export abgebrochen' : 'Export ist hier nicht möglich', res !== 'declined');
+  }
+  const xCsv = (head, rows) => '\uFEFF' + [head].concat(rows).map(r => r.map(v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"').join(';')).join('\r\n');
+  // Einfache Tabelle als PDF (A4 hoch). cols: [{ h, w (Anteil), b (fett), g (grau), r (rechtsbündig) }], rows: Arrays oder { sec: 'Zwischentitel' }
+  function tablePdf(doc) {
+    const WIN = { '–': '\x96', '—': '\x97', '‘': '\x91', '’': '\x92', '“': '\x93', '”': '\x94', '€': '\x80', '…': '\x85', '•': '\x95', '−': '-', '✓': 'x', '☐': ' ' };
+    const enc = t => String(t == null ? '' : t).normalize('NFC').replace(/[\u0000-\u001F\u00A0\u202F]/g, ' ').split('').map(ch => ch.charCodeAt(0) < 256 ? ch : (WIN[ch] || '?')).join('').replace(/([()\\])/g, '\\$1');
+    const cut = (t, n) => { t = String(t == null ? '' : t); return t.length > n ? t.slice(0, Math.max(1, n - 1)) + '…' : t; };
+    const W = 515, tot = doc.cols.reduce((a, c) => a + (c.w || 1), 0); let x = 40;
+    const cols = doc.cols.map(c => { const w = W * (c.w || 1) / tot, o = { ...c, x, w }; x += w; return o; });
+    const pages = []; let cur = null, y = 0;
+    const add = (font, size, xx, text, gray) => cur.push(`${gray ? '0.4 g' : '0 g'} BT /${font} ${size} Tf ${xx.toFixed(1)} ${y} Td (${enc(text)}) Tj ET`);
+    const head = () => { cols.forEach(c => add('F2', 9, c.r ? c.x + c.w - 6 - String(c.h).length * 5 : c.x, c.h)); y -= 6; cur.push(`0.7 G 40 ${y} m 555 ${y} l S`); y -= 15; };
+    const page = () => { cur = []; pages.push(cur); y = 800; };
+    page(); add('F2', 18, 40, cut(doc.title, 60)); y -= 20; if (doc.sub) { add('F1', 10, 40, cut(doc.sub, 110), true); y -= 14; } y -= 12; head();
+    doc.rows.forEach(r => {
+      if (y < 60) { page(); head(); }
+      if (r && r.sec) { y -= 4; if (y < 70) { page(); head(); } add('F2', 11, 40, cut(r.sec, 90)); y -= 5; cur.push(`0.85 G 40 ${y} m 555 ${y} l S`); y -= 13; return; }
+      cols.forEach((c, i) => { const v = r[i], n = Math.floor(c.w / 5.1); const t = cut(v, n);
+        add(c.b ? 'F2' : 'F1', 10, c.r ? c.x + c.w - 6 - t.length * 5 : c.x, t, c.g); });
+      y -= 16;
+    });
+    const objs = [];
+    const fontObj = n => `<< /Type /Font /Subtype /Type1 /BaseFont /${n} /Encoding /WinAnsiEncoding >>`;
+    objs[1] = '<< /Type /Catalog /Pages 2 0 R >>'; objs[3] = fontObj('Helvetica'); objs[4] = fontObj('Helvetica-Bold'); objs[5] = fontObj('Helvetica-Oblique');
+    const kids = [];
+    pages.forEach((pg, i) => { const pn = 6 + i * 2, cn = pn + 1, st = pg.concat([`0.5 g BT /F1 8 Tf 40 30 Td (${enc('StageMate · Seite ' + (i + 1) + ' von ' + pages.length)}) Tj ET`]).join('\n'); kids.push(pn + ' 0 R');
+      objs[pn] = `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents ${cn} 0 R >>`;
+      objs[cn] = `<< /Length ${st.length} >>\nstream\n${st}\nendstream`; });
+    objs[2] = `<< /Type /Pages /Kids [${kids.join(' ')}] /Count ${pages.length} >>`;
+    let out = '%PDF-1.4\n'; const offs = [];
+    for (let i = 1; i < objs.length; i++) { offs[i] = out.length; out += `${i} 0 obj\n${objs[i]}\nendobj\n`; }
+    const xr = out.length;
+    out += `xref\n0 ${objs.length}\n0000000000 65535 f \n` + offs.slice(1).map(o => String(o).padStart(10, '0') + ' 00000 n \n').join('') + `trailer\n<< /Size ${objs.length} /Root 1 0 R >>\nstartxref\n${xr}\n%%EOF`;
+    const u8 = new Uint8Array(out.length); for (let i = 0; i < out.length; i++) u8[i] = out.charCodeAt(i) & 255;
+    return new Blob([u8], { type: 'application/pdf' });
+  }
+  // Kalenderdatei (.ics) für Handy, Google, Outlook – Termine einzeln (Wiederholungen ausgeschrieben)
+  function buildIcs(items, calName) {
+    const esc = t => String(t || '').replace(/\\/g, '\\\\').replace(/;/g, '\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
+    // Zeilen nach 75 Byte umbrechen (Umlaute und Emojis zählen mehrfach)
+    const te = new TextEncoder(), fold = l => { const o = []; let cur = '', n = 0; for (const ch of l) { const b = te.encode(ch).length; if (n + b > 74) { o.push(cur); cur = ' '; n = 1; } cur += ch; n += b; } o.push(cur); return o.join('\r\n'); };
+    const ymd = d => dKey(d).replace(/-/g, ''), hm = t => t.replace(':', '') + '00';
+    const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z');
+    const L = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Housi//StageMate//DE', 'CALSCALE:GREGORIAN', 'X-WR-CALNAME:' + esc(calName), 'X-WR-TIMEZONE:Europe/Zurich',
+      'BEGIN:VTIMEZONE', 'TZID:Europe/Zurich', 'BEGIN:DAYLIGHT', 'TZOFFSETFROM:+0100', 'TZOFFSETTO:+0200', 'TZNAME:CEST', 'DTSTART:19700329T020000', 'RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=-1SU', 'END:DAYLIGHT',
+      'BEGIN:STANDARD', 'TZOFFSETFROM:+0200', 'TZOFFSETTO:+0100', 'TZNAME:CET', 'DTSTART:19701025T030000', 'RRULE:FREQ=YEARLY;BYMONTH=10;BYDAY=-1SU', 'END:STANDARD', 'END:VTIMEZONE'];
+    items.forEach(({ ev, date }) => {
+      L.push('BEGIN:VEVENT', 'UID:' + ev.id + '-' + ymd(date) + '@stagemate', 'DTSTAMP:' + stamp, 'SUMMARY:' + esc((ev.category === 'auftritt' ? '🎤 ' : '') + (ev.title || 'Termin')));
+      if (ev.allDay || !ev.start) L.push('DTSTART;VALUE=DATE:' + ymd(date), 'DTEND;VALUE=DATE:' + ymd(addDays(date, 1)));
+      else {
+        L.push('DTSTART;TZID=Europe/Zurich:' + ymd(date) + 'T' + hm(ev.start));
+        const e = ev.end && ev.end > ev.start ? ev.end : (() => { const m = Math.min(23 * 60 + 59, toMin(ev.start) + 60); return pad2(Math.floor(m / 60)) + ':' + pad2(m % 60); })();
+        L.push('DTEND;TZID=Europe/Zurich:' + ymd(date) + 'T' + hm(e));
+      }
+      const loc = [ev.location, ev.address].filter(Boolean).join(', '); if (loc) L.push('LOCATION:' + esc(loc));
+      const note = [catOf(ev.category).name, ev.notes].filter(Boolean).join('\n'); if (note) L.push('DESCRIPTION:' + esc(note));
+      L.push('END:VEVENT');
+    });
+    L.push('END:VCALENDAR');
+    return L.map(fold).join('\r\n') + '\r\n';
+  }
+  // Termine im Zeitraum: 90 Tage zurück bis 1 Jahr voraus
+  function xEvents(onlyGigs) {
+    const t = dOnly(new Date()), out = [];
+    calEvents.filter(ev => ev.date && ev.kind !== 'checklist' && (!onlyGigs || ev.category === 'auftritt')).forEach(ev => occurrences(ev, addDays(t, -90), addDays(t, 365)).forEach(date => out.push({ ev, date })));
+    return out.sort((a, b) => a.date - b.date || (a.ev.start || '').localeCompare(b.ev.start || ''));
+  }
+  const xBand = () => (bands[currentBand] && bands[currentBand].name) || 'Band';
+  const xEvRow = ({ ev, date }) => [fmtDateOv(date, ovCfg().date), ev.allDay ? 'ganztägig' : (ev.start || '') + (ev.end ? '–' + ev.end : ''), ev.title || 'Termin', catOf(ev.category).name, ev.location || ''];
+  function evExport(kind, gigsOnly) {
+    const list = xEvents(gigsOnly), area = gigsOnly ? 'Gigs' : 'Kalender';
+    if (!list.length) return flash(gigsOnly ? 'Keine Gigs im Zeitraum' : 'Keine Termine im Zeitraum', true);
+    if (kind === 'ics') return xSave(xFile(area, xBand(), '', 'ics'), buildIcs(list, xBand() + ' – ' + area), 'text/calendar;charset=utf-8');
+    if (kind === 'csv') return xSave(xFile(area, xBand(), '', 'csv'), xCsv(['Datum', 'Zeit', 'Titel', 'Kategorie', 'Ort', 'Adresse', 'Notiz'], list.map(x => xEvRow(x).concat([x.ev.address || '', x.ev.notes || '']))), 'text/csv;charset=utf-8');
+    xSave(xFile(area, xBand(), '', 'pdf'), tablePdf({ title: area + ' · ' + xBand(), sub: '90 Tage zurück bis 1 Jahr voraus · ' + list.length + ' Einträge',
+      cols: [{ h: 'Datum', w: 1.5 }, { h: 'Zeit', w: 1.3 }, { h: 'Titel', w: 3.8, b: 1 }, { h: 'Kategorie', w: 1.6, g: 1 }, { h: 'Ort', w: 2.4, g: 1 }], rows: list.map(xEvRow) }));
+  }
+  // Checklisten: alle kommenden und ohne Datum, wie auf der Seite
+  function clExport(kind) {
+    const t = dOnly(new Date());
+    const all = clpItems().filter(x => !x.date || x.date >= t).sort((a, b) => (a.date ? a.date - b.date : 1) || (a.ev.title || '').localeCompare(b.ev.title || ''));
+    const blocks = all.map(({ ev, date }) => {
+      const list = ev.checklists && Array.isArray(ev.checklists[clDk(ev, date)]) ? ev.checklists[clDk(ev, date)] : [];
+      const rows = [];
+      list.forEach(r => { const its = Array.isArray(r.items) ? r.items : [], who = m => (Array.isArray(m) ? m : []).map(clName).join(', ');
+        if (!its.length) rows.push([r.done ? '✓' : '☐', r.title || '', '', who(r.members)]);
+        its.forEach(i => rows.push([i.done ? '✓' : '☐', r.title || '', i.title || '', who(i.members)])); });
+      return { name: (ev.title || 'Checkliste') + (date ? ' · ' + fmtDateOv(date, ovCfg().date) : ''), rows };
+    }).filter(b => b.rows.length);
+    if (!blocks.length) return flash('Keine offenen Checklisten mit Punkten', true);
+    if (kind === 'csv') return xSave(xFile('Checklisten', xBand(), '', 'csv'), xCsv(['Checkliste', 'Erledigt', 'Reiter', 'Punkt', 'Übernommen von'], [].concat(...blocks.map(b => b.rows.map(r => [b.name, r[0] === '✓' ? 'ja' : 'nein', r[1], r[2], r[3]])))), 'text/csv;charset=utf-8');
+    if (kind === 'txt') return xSave(xFile('Checklisten', xBand(), '', 'txt'), '\uFEFF' + blocks.map(b => b.name + '\r\n' + b.rows.map(r => `  [${r[0] === '✓' ? 'x' : ' '}] ${r[1]}${r[2] ? ' › ' + r[2] : ''}${r[3] ? '  (' + r[3] + ')' : ''}`).join('\r\n')).join('\r\n\r\n'), 'text/plain;charset=utf-8');
+    xSave(xFile('Checklisten', xBand(), '', 'pdf'), tablePdf({ title: 'Checklisten · ' + xBand(), sub: blocks.length + ' Checklisten (kommend und ohne Datum)',
+      cols: [{ h: '', w: 0.5 }, { h: 'Reiter', w: 2.6, b: 1 }, { h: 'Punkt', w: 4 }, { h: 'Übernommen von', w: 2.4, g: 1 }],
+      rows: [].concat(...blocks.map(b => [{ sec: b.name }].concat(b.rows.map(r => [r[0] === '✓' ? '[x]' : '[  ]', r[1], r[2], r[3]])))) }));
+  }
+  function songExport(kind) {
+    const list = songsSorted('', { by: 'title', dir: 1 });
+    if (!list.length) return flash('Noch keine Songs', true);
+    const row = x => [x.title || '', x.artist || '', x.album ? (SL_REL[x.relType] || 'Album') + ': ' + x.album : '', x.year || '', x.genre || '', slFmt(x.dur), x.key || '', x.bpm || ''];
+    if (kind === 'csv') return xSave(xFile('Songs', xBand(), '', 'csv'), xCsv(['Titel', 'Interpret', 'Veröffentlichung', 'Jahr', 'Genre', 'Länge', 'Tonart', 'BPM', 'Notiz'], list.map(x => row(x).concat([x.note || '']))), 'text/csv;charset=utf-8');
+    xSave(xFile('Songs', xBand(), '', 'pdf'), tablePdf({ title: 'Songs · ' + xBand(), sub: list.length + ' Songs',
+      cols: [{ h: 'Titel', w: 3, b: 1 }, { h: 'Interpret', w: 2, g: 1 }, { h: 'Veröffentlichung', w: 2.6, g: 1 }, { h: 'Jahr', w: 0.8 }, { h: 'Länge', w: 0.9 }, { h: 'Tonart', w: 0.9 }, { h: 'BPM', w: 0.7 }],
+      rows: list.map(x => { const r = row(x); return [r[0], r[1], r[2], r[3], r[5], r[6], r[7]]; }) }));
+  }
+  // Formate je Seite. lock: später für Bezahlfunktionen (Schloss wie beim Tutorial)
+  const F = (id, ico, label, desc, run) => ({ id, ico, label, desc, run });
+  const X_PAGES = {
+    setlist: { title: 'Setlist', what: () => { const L = slCur(); return L ? '„' + (L.name || 'Setlist') + '“' : ''; }, ok: () => !!slCur(),
+      formats: [F('pdffile', '📄', 'PDF', 'Zum Ausdrucken oder Weiterschicken, schlicht und gut lesbar.', () => slExport('pdffile')),
+        F('pdf', '🖨️', 'Drucken (Bühne)', 'Öffnet eine Druckansicht mit grosser Schrift für den Bühnenboden.', () => slExport('pdf')),
+        F('docx', '📝', 'Word', 'Zum Weiterbearbeiten in Word oder Google Docs.', () => slExport('docx')),
+        F('txt', '🔤', 'Text', 'Einfache Liste zum Einfügen in Chats oder E-Mails.', () => slExport('txt')),
+        F('csv', '📊', 'CSV', 'Tabelle für Excel mit allen Angaben pro Song.', () => slExport('csv')),
+        F('json', '🗂️', 'JSON', 'Sicherung, die StageMate wieder importieren kann.', () => slExport('json'))] },
+    timetable: { title: 'Timetable', what: () => { const g = calEvents.find(e => e.id === ttSel); return g ? '„' + (g.title || 'Gig') + '“' : ''; }, ok: () => !!ttSel && ttEntries(ttSel).length > 0,
+      formats: [F('pdf', '📄', 'PDF', 'Ablauf zum Aushängen oder Weiterschicken.', () => ttExport('pdf')),
+        F('txt', '🔤', 'Text', 'Einfache Liste zum Einfügen in Chats.', () => ttExport('txt')),
+        F('csv', '📊', 'CSV', 'Tabelle für Excel.', () => ttExport('csv'))] },
+    finance: { title: 'Finanzen', what: () => 'Jahr ' + finYear, ok: () => true,
+      formats: [F('pdf', '📄', 'PDF', 'Übersicht mit Summen, zum Ablegen oder Weitergeben.', () => finExport('pdf')),
+        F('csv', '📊', 'CSV', 'Alle Buchungen als Tabelle für Excel.', () => finExport('csv'))] },
+    calendar: { title: 'Kalender', what: () => 'Alle Termine, 90 Tage zurück bis 1 Jahr voraus', ok: () => true,
+      formats: [F('ics', '📅', 'Kalenderdatei (.ics)', 'Termine ins Handy, Google oder Outlook übernehmen.', () => evExport('ics')),
+        F('pdf', '📄', 'PDF', 'Terminliste zum Ausdrucken.', () => evExport('pdf')),
+        F('csv', '📊', 'CSV', 'Terminliste für Excel.', () => evExport('csv'))] },
+    gigs: { title: 'Gigs', what: () => 'Alle Gigs, 90 Tage zurück bis 1 Jahr voraus', ok: () => true,
+      formats: [F('ics', '📅', 'Kalenderdatei (.ics)', 'Gigs ins Handy, Google oder Outlook übernehmen.', () => evExport('ics', true)),
+        F('pdf', '📄', 'PDF', 'Gigliste zum Ausdrucken.', () => evExport('pdf', true)),
+        F('csv', '📊', 'CSV', 'Gigliste für Excel.', () => evExport('csv', true))] },
+    checklist: { title: 'Checklisten', what: () => 'Kommende Checklisten und solche ohne Datum', ok: () => true,
+      formats: [F('pdf', '📄', 'PDF', 'Zum Abhaken auf Papier.', () => clExport('pdf')),
+        F('txt', '🔤', 'Text', 'Einfache Liste zum Einfügen in Chats.', () => clExport('txt')),
+        F('csv', '📊', 'CSV', 'Tabelle für Excel.', () => clExport('csv'))] },
+    songs: { title: 'Songs', what: () => 'Alle Songs der Band', ok: () => true,
+      formats: [F('pdf', '📄', 'PDF', 'Songliste zum Ausdrucken.', () => songExport('pdf')),
+        F('csv', '📊', 'CSV', 'Tabelle für Excel mit allen Angaben.', () => songExport('csv'))] }
+  };
+  function openExport(page) {
+    const P = X_PAGES[page]; if (!P) return;
+    if (!P.ok()) return flash('Hier gibt es noch nichts zu exportieren', true);
+    $('xH').textContent = '⤓ Exportieren – ' + P.title; $('xWhat').textContent = P.what() || '';
+    const g = $('xGrid'); g.innerHTML = '';
+    P.formats.forEach(f => {
+      const b = el('button', 'x-tile' + (f.lock ? ' pv-locked' : '')); b.type = 'button';
+      b.append(el('span', 'x-ico', f.ico), el('span', 'x-l', f.label), el('span', 'x-d', f.desc));
+      b.addEventListener('click', () => { if (f.lock) return flash('Diese Funktion ist gesperrt', true); closeExport(); try { f.run(); } catch (err) { console.error(err); flash('Export fehlgeschlagen', true); } });
+      g.appendChild(b);
+    });
+    $('xModal').classList.remove('hidden');
+  }
+  const closeExport = () => $('xModal').classList.add('hidden');
+  document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-export]'); if (b) openExport(b.dataset.export); });
+  $('xClose').addEventListener('click', closeExport);
+  $('xModal').addEventListener('click', e => { if (e.target === $('xModal')) closeExport(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('xModal').classList.contains('hidden')) closeExport(); });
+  // Setlist-Export: Text, CSV, JSON, Word, PDF, Drucken (aufgerufen aus dem Export-Fenster)
+  function slExport(kind) {
+    const L = slCur(); if (!L) return; const T = slTimes(L);
+    const slG = calEvents.find(e => e.id === L.gigId), slFn = ext => xFile('Setlist', L.name || 'Setlist', slG && slG.date, ext);
     if (kind === 'docx' || kind === 'pdffile') {
       const g = calEvents.find(e => e.id === L.gigId);
       const doc = { title: L.name || 'Setlist', sub: (g ? 'Gig: ' + (g.title || '') + (g.date ? ' (' + fmtDateOv(parseKey(g.date), ovCfg().date) + ')' : '') + ' · ' : '') + 'Gesamt ' + slFmt(T.total),
         rows: T.rows.map(r => ({ num: r.num || '', clock: r.clock || '', title: r.it.title || SL_TYPES[r.it.type].label, artist: r.it.artist || '', dur: slFmt(r.it.dur), key: [r.it.key, r.it.bpm ? r.it.bpm + ' BPM' : ''].filter(Boolean).join(' · '), note: r.it.note || '', special: !r.num })) };
-      const blob = kind === 'docx' ? buildDocx(doc) : buildPdf(doc), nm = (L.name || 'Setlist').replace(/[^\p{L}\p{N}_ -]+/gu, '').trim() || 'Setlist';
-      const url = URL.createObjectURL(blob), a = document.createElement('a'); a.href = url; a.download = nm + (kind === 'docx' ? '.docx' : '.pdf'); document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000);
-      return;
+      return xSave(slFn(kind === 'docx' ? 'docx' : 'pdf'), kind === 'docx' ? buildDocx(doc) : buildPdf(doc));
     }
     if (kind === 'pdf') {
       // Druckansicht: gross und gut lesbar auf der Bühne; „Als PDF speichern“ im Druckdialog
@@ -3128,9 +3291,8 @@
       txt = '\uFEFF' + [L.name || 'Setlist', gig ? `Gig: ${gig.title || ''}${gig.date ? ' (' + fmtDateOv(parseKey(gig.date), ovCfg().date) + ')' : ''}` : '', `Gesamt: ${slFmt(T.total)}`, ''].filter((x, i) => x || i === 3).join('\r\n') + '\r\n' +
         T.rows.map(r => `${r.num ? String(r.num).padStart(2) + '.' : ' · '} ${r.clock ? r.clock + '  ' : ''}${r.it.title || SL_TYPES[r.it.type].label}${r.it.artist ? ' – ' + r.it.artist : ''}  (${slFmt(r.it.dur)})${r.it.key ? '  [' + r.it.key + ']' : ''}${r.it.note ? '  ' + r.it.note : ''}`).join('\r\n'); mime = 'text/plain';
     }
-    const url = URL.createObjectURL(new Blob([txt], { type: mime + ';charset=utf-8' }));
-    const a = document.createElement('a'); a.href = url; a.download = safe + '.' + kind; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000);
-  }));
+    xSave(slFn(kind), txt, mime + ';charset=utf-8');
+  }
 
   // Setlist -> Timetable des zugewiesenen Gigs (Start, Ende, Songzahl, Verknüpfung)
   $('slToTT').addEventListener('click', e => {
@@ -3205,7 +3367,6 @@
     const has = !!ttSel, can = ttCan();
     $('ttGo').disabled = !has;
     ['ttAdd', 'ttImport', 'ttCopy'].forEach(i => { $(i).disabled = !has; $(i).classList.toggle('pv-locked', !can); });
-    document.querySelectorAll('[data-ttx]').forEach(b => { b.disabled = !has; });
     const box = $('ttItems'); box.innerHTML = '';
     $('ttEmpty').classList.toggle('hidden', has && ttEntries(ttSel).length > 0);
     $('ttEmpty').textContent = has ? 'Noch keine Einträge. Mit „+ Eintrag“ oder „Import“ legst du den Ablauf an.' : 'Es gibt noch keinen Gig. Lege zuerst im Kalender einen Auftritt an.';
@@ -3325,15 +3486,17 @@
     ttSave(ttSel); ttImpClose(); renderTimetable();
     flash(res.length + ' Einträge übernommen' + (bad ? `, ${bad} Zeilen übersprungen` : ''));
   });
-  document.querySelectorAll('[data-ttx]').forEach(b => b.addEventListener('click', () => {
-    if (!ttSel) return; const g = calEvents.find(e => e.id === ttSel) || {}, kind = b.dataset.ttx, list = ttEntries(ttSel);
+  function ttExport(kind) {
+    if (!ttSel) return; const g = calEvents.find(e => e.id === ttSel) || {}, list = ttEntries(ttSel);
+    if (!list.length) return flash('Die Timetable ist leer', true);
+    if (kind === 'pdf') return xSave(xFile('Timetable', g.title || 'Gig', g.date, 'pdf'), tablePdf({ title: 'Timetable · ' + (g.title || 'Gig'), sub: g.date ? fmtLong(parseKey(g.date)) : '',
+      cols: [{ h: 'Zeit', w: 1.2 }, { h: 'Band / Programm', w: 4, b: 1 }, { h: 'Ende', w: 1 }, { h: 'Songs', w: 0.8 }, { h: 'Notiz', w: 3.5, g: 1 }],
+      rows: list.map(x => [x.time, ttName(x), x.end || (+x.dur > 0 ? x.dur + ' Min.' : ''), +x.songs > 0 ? x.songs : '', x.note]) }));
     const q = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
     const txt = kind === 'csv' ? '\uFEFF' + ['Uhrzeit', 'Band', 'Ende', 'Dauer (Min.)', 'Songs', 'Notiz'].map(q).join(';') + '\r\n' + list.map(x => [x.time, ttName(x), x.end || '', x.dur || '', x.songs || '', x.note].map(q).join(';')).join('\r\n')
       : '\uFEFF' + list.map(x => `${x.time}${x.end ? ' - ' + x.end : ''} ${ttName(x)}${x.songs ? ' (' + x.songs + ' Songs)' : ''}${x.note ? ' – ' + x.note : ''}`).join('\r\n');
-    const safe = ('Timetable ' + (g.title || '')).replace(/[^\p{L}\p{N}_ -]+/gu, '').trim() || 'Timetable';
-    const url = URL.createObjectURL(new Blob([txt], { type: (kind === 'csv' ? 'text/csv' : 'text/plain') + ';charset=utf-8' }));
-    const a = document.createElement('a'); a.href = url; a.download = safe + '.' + (kind === 'csv' ? 'csv' : 'txt'); document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000);
-  }));
+    xSave(xFile('Timetable', g.title || 'Gig', g.date, kind === 'csv' ? 'csv' : 'txt'), txt, (kind === 'csv' ? 'text/csv' : 'text/plain') + ';charset=utf-8');
+  }
   // Kalender: Schalter in der Tagesansicht
   function ttCalBtn() { const b = $('calTT'); b.classList.toggle('on', ttCalOn()); b.textContent = '⏱ Timetable: ' + (ttCalOn() ? 'an' : 'aus'); }
   $('calTT').addEventListener('click', () => { try { ls.set('ttCal', ttCalOn() ? '0' : '1'); } catch (e) {} ttCalBtn(); renderCalendar(0); });
@@ -3497,8 +3660,18 @@
     catch (err) { setMsg($('finMsg'), friendlyError(err), 'error'); }
   });
   // CSV-Export (Excel-tauglich); Dateiname enthält die Versionsnummer
-  $('finExport').addEventListener('click', async () => {
+  function finList() { return finEntries.filter(e => (e.date || '').startsWith(String(finYear))).sort((a, b) => (a.date || '').localeCompare(b.date || '') || (a.time || '').localeCompare(b.time || '')); }
+  function finExport(kind) {
     if (FIN_LOCKED) return previewBlocked(null, FIN_LOCK);
+    const band = (bands[currentBand] && bands[currentBand].name) || 'Band';
+    if (kind === 'pdf') {
+      const L = finList(); let sIn = 0, sOut = 0;
+      const rows = L.map(e => { const gig = e.gigId && calEvents.find(x => x.id === e.gigId), a = +e.amount || 0; if (e.type === 'in') sIn += a; else sOut += a;
+        return [e.date ? fmtDateOv(parseKey(e.date), ovCfg().date) : '', e.title || '', e.cat || '', gig ? gig.title || '' : '', (e.type === 'in' ? '+' : '−') + a.toFixed(2)]; });
+      return xSave(xFile('Finanzen', band, String(finYear), 'pdf'), tablePdf({ title: 'Finanzen ' + finYear + ' · ' + band,
+        sub: `Einnahmen ${sIn.toFixed(2)} · Ausgaben ${sOut.toFixed(2)} · Saldo ${(sIn - sOut).toFixed(2)} CHF`,
+        cols: [{ h: 'Datum', w: 1.4 }, { h: 'Bezeichnung', w: 3.6, b: 1 }, { h: 'Kategorie', w: 1.8, g: 1 }, { h: 'Gig', w: 2.2, g: 1 }, { h: 'CHF', w: 1.3, r: 1 }], rows }));
+    }
     const list = finEntries.filter(e => (e.date || '').startsWith(String(finYear))).sort((a, b) => (a.date || '').localeCompare(b.date || '') || (a.time || '').localeCompare(b.time || ''));
     const q = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
     const rows = [['Datum', 'Zeit', 'Typ', 'Bezeichnung', 'Kategorie', 'Gig', 'Betrag CHF', 'Notiz'].map(q).join(';')];
@@ -3508,13 +3681,8 @@
       rows.push([q(e.date), q(e.time || ''), q(e.type === 'in' ? 'Einnahme' : 'Ausgabe'), q(e.title), q(e.cat), q(gig ? gig.title : ''), amt, q(e.note)].join(';'));
     });
     const text = '﻿' + rows.join('\r\n');
-    const band = (bands[currentBand].name || 'Band').replace(/[^\w\-äöüÄÖÜ ]+/g, '').trim().replace(/\s+/g, '_');
-    const filename = `StageMate_${APP_VERSION}_Finanzen_${band}_${finYear}.csv`;
-    const res = await Data.saveFile({ filename, data: text, type: 'text/csv;charset=utf-8' });
-    if (res === 'saved') flash('CSV gespeichert: ' + filename);
-    else if (res === 'browser') flash('CSV exportiert: ' + filename);
-    else flash(res === 'declined' ? 'Export abgebrochen' : 'Export ist hier nicht möglich', res !== 'declined');
-  });
+    xSave(xFile('Finanzen', band, String(finYear), 'csv'), text, 'text/csv;charset=utf-8');
+  }
 
   // ================= Band auflösen =================
   const dzPath = (who, bandId) => `bandadmin/${who}/dissolve/${bandId}`;
@@ -6724,6 +6892,7 @@
         T('🧭', 'Registerkarten', 'Kalender für alle Termine, Gigs für eure Auftritte mit allen Details, Checkliste für Aufgaben rund um Gigs und Termine, Finanzen für Einnahmen und Ausgaben, Verwaltung für Mitglieder, Rollen und Rechte.'),
       ],
       page2: [
+        T('📤', 'Export', '„⤓ Exportieren“ oben öffnet das Export-Fenster: Kalenderdatei (.ics) für Handy, Google oder Outlook, dazu PDF und CSV. Enthalten sind die Termine von 90 Tagen zurück bis ein Jahr voraus.'),
         T('🗓️', 'Ansicht wählen', 'Oben zwischen Tag, Woche, Monat und Jahr umschalten – antippen oder die Markierung mit dem Finger seitlich schieben – oder mit den Tasten D, W, M und J. Die zuletzt gewählte Ansicht bleibt gespeichert.'),
         T('↔️', 'Blättern', 'Mit den Pfeilen ‹ ›, den Pfeiltasten ← → oder seitlich über den Kalender wischen. „Heute“ (Taste T) springt zurück.'),
         T('📅', 'Jahresansicht', 'Ein Klick wählt einen Tag aus – unten siehst du seine Termine. Ein Doppelklick auf einen Tag oder einen Monat öffnet den Monat.'),
@@ -6740,6 +6909,7 @@
         T('👀', 'Nur ansehen', 'Du hast für den Kalender nur Leserechte – Termine kannst du öffnen, aber nicht ändern.', !cal),
       ],
       page3: [
+        T('📤', 'Export', '„⤓ Exportieren“ oben öffnet das Export-Fenster: alle Gigs als Kalenderdatei (.ics), PDF oder CSV.'),
         T('🎤', 'Alle Gigs', 'Hier stehen alle Termine der Kategorie „Gig“ einzeln, nach Monaten sortiert. Wiederkehrende Gigs erscheinen mit jedem Datum.'),
         T('👆', 'Auf- und zuklappen', 'Tippe auf einen Gig für Zeitplan, Location, Kontakt, Links, Dokumente und Notizen. Oben gibt es „Alle aufklappen“ und „Alle zuklappen“.'),
         T('⏳', 'Countdown', 'Rechts siehst du, wann der Gig ist – „Heute“, „Morgen“ oder „in X Tagen“.'),
@@ -6754,6 +6924,7 @@
         T('🕰️', 'Vergangene Gigs', 'Ganz unten aufklappbar unter „Vergangene Gigs“.'),
       ],
       page4: [
+        T('📤', 'Export', '„⤓ Exportieren“ oben öffnet das Export-Fenster: kommende Checklisten und solche ohne Datum als PDF zum Abhaken, als Text oder CSV.'),
         T('⠿', 'Reihenfolge', 'Pack einen Reiter (an seiner Kopfzeile) oder einen Unterreiter und zieh ihn an eine andere Stelle – wie bei den Registerkarten. Auf dem Handy kurz gedrückt halten, dann ziehen. Die Reihenfolge gilt nur für dich, die anderen sehen ihre eigene. Verschieben ist nur bei der Sortierung „Manuell“ eingeblendet.'),
         T('⇅', 'Sortieren', 'Oben rechts über „⇅“ wählst du, wie Checklisten, Reiter und Unterreiter für dich geordnet werden: Persönlicher Status, Bandstatus, Termin (kommende zuerst), Alphabet oder Manuell. „Auf … anwenden“ gilt nur für diese Band, „Auf alle Bands anwenden“ überall. Es gilt immer die zuletzt getroffene Wahl – hier oder in den Einstellungen. Bist du nur in einer Band, führt „Zu deinen Bands“ zum Beitreten oder Gründen einer weiteren.'),
         T('➕', 'Checkliste erstellen', 'Oben „Checkliste erstellen“ (oder unten bei einem Gig): einem bestehenden Gig oder Termin zuweisen, einen neuen Gig oder Termin mit Checkliste anlegen – oder nur eine Checkliste erstellen, auf Wunsch mit Deadline.'),
@@ -6769,25 +6940,28 @@
         T('🎼', 'Setlists', 'Die Seite zeigt alle Setlists der Band als Karten. Ein Klick öffnet die Setlist mit ihren Songs. Oben sortierst du nach Name, Gig-Datum, Dauer, Anzahl Songs oder zuletzt geändert.'),
         T('➕', 'Elemente', '„Song hinzufügen oder erstellen“, dazu Intro, Outro, Zwischenteil, Pause und Ansage. Am Griff ⠿ verschiebst du, ein Klick auf das Element bearbeitet es. Mit Beginn-Uhrzeit siehst du pro Element die Zeit, mit Soll-Länge die Abweichung.'),
         T('⚠️', 'Doppelwarnung', 'Kommt ein Titel doppelt vor, wird der Knopf rot. Ein Klick schaltet die Warnung aus („KEINE WARNUNG“); bei einem neuen doppelten Titel erscheint sie wieder. Ausnahmen (Intro, Break …) stellt der Admin in der Verwaltung ein.'),
-        T('📤', 'Export', 'Die gelben Knöpfe unten speichern die Setlist als Text, CSV oder JSON.'),
+        T('📤', 'Export', '„⤓ Exportieren“ oben öffnet das Export-Fenster: PDF, Drucken (grosse Schrift für die Bühne), Word, Text, CSV oder JSON. Jedes Format sagt kurz, wofür es gut ist.'),
+        T('🎤', 'Bühnenmodus', 'Unten „Bühnenmodus“: Vollbild mit grosser Schrift. Play, Pause und Stopp steuern die Uhr (Eintrag und ganzes Set); Leertaste = Play/Pause, S = Stopp, Pfeile oder Wischen schalten weiter.'),
+        T('📥', 'Import', '„JSON importieren“ in der Übersicht aller Setlists liest eine StageMate-Sicherung als neue Setlist ein.'),
         T('↩️', 'Zurück', 'Unten rechts „Zurück“ oder oben ‹ führt zur vorherigen Seite.'),
       ],
       page7: [
         T('🎵', 'Songs', 'Alle Songs der Band an einem Ort: Titel, Interpret, Veröffentlichung (Album, EP oder Single mit Name, Pflicht), Jahr, Genre, Länge, Tonart, BPM. Mit „+ Neuer Song“ legst du einen an.'),
         T('⇅', 'Suchen und sortieren', 'Oben suchst du und sortierst nach Titel, Interpret, Album, Jahr, Genre oder Länge.'),
         T('➡️', 'In die Setlist', 'Auf der Seite „Setlist“ übernimmst du Songs mit „Song hinzufügen oder erstellen“.'),
+        T('📤', 'Export', '„⤓ Exportieren“ oben öffnet das Export-Fenster: Songliste als PDF oder CSV.'),
       ],
       page8: [
         T('⏱️', 'Timetable', 'Der Ablauf der Band an einem Gig-Tag: Uhrzeit und Titel, z. B. Get In, Soundcheck, Essen, Auftritt, Abbau. Oben wählst du den Gig.'),
         T('➕', 'Einträge', '„+ Eintrag“ öffnet das Eingabefenster. Pflicht sind Bandname und Startzeit; Ende oder Dauer, Songzahl und Setlist sind optional. Mit „Import“ liest du eine Textdatei (Zeile „19:00 - 19:45 Bandname“) oder CSV (Uhrzeit;Band;Ende;Dauer;Songs;Notiz) ein.'),
         T('📅', 'Kalender', 'In der Tagesansicht des Kalenders blendet der Knopf „Timetable“ die Einträge des Gigs ein oder aus.'),
-        T('📤', 'Export', 'Die gelben Knöpfe speichern den Ablauf als Text oder CSV.'),
+        T('📤', 'Export', '„⤓ Exportieren“ oben öffnet das Export-Fenster: PDF, Text oder CSV.'),
       ],
       page5: [
         T('💰', 'Finanzen', 'Hier erfasst ihr Einnahmen und Ausgaben der Band. Oben siehst du Einnahmen, Ausgaben und den Saldo des gewählten Jahres, darunter die Aufteilung nach Kategorie.'),
         T('➕', 'Eintrag erfassen', '„+ Einnahme“ oder „− Ausgabe“: Betrag in CHF, Datum, optional die Zeit, Bezeichnung, Kategorie, optional einen Gig verknüpfen und eine Notiz. Ein Klick auf einen Eintrag öffnet ihn zum Bearbeiten oder Löschen.', finCanEdit()),
         T('📅', 'Jahr wählen', 'Oben links wählst du das Jahr. Die Einträge sind nach Monat gruppiert, die neusten oben.'),
-        T('📤', 'CSV exportieren', 'Speichert die Einträge des gewählten Jahres als CSV-Datei (z. B. für Excel). Der Dateiname enthält die Versionsnummer, die Band und das Jahr.'),
+        T('📤', 'Export', '„⤓ Exportieren“ oben öffnet das Export-Fenster: PDF mit Summen oder CSV für Excel, jeweils für das gewählte Jahr. Der Dateiname enthält Band und Jahr.'),
         T('🔒', 'Rechte', 'Ohne besondere Einstellung dürfen Mitglieder die Finanzen nur ansehen. Bearbeiten kann, wer vom Admin unter „Verwaltung“ das Recht „Bearbeiten“ für Finanzen bekommt – der Admin selbst immer.'),
         T('👀', 'Nur lesen', 'Du hast für die Finanzen nur Leserechte – du siehst alles, kannst aber nichts ändern.', !finCanEdit()),
       ],

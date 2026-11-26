@@ -12,7 +12,11 @@ const APP_PHASE = 'Alpha';
 // Neueste Version zuerst. Typen: neu | besser | fix | intern
 const APP_CHANGELOG = [
   { version: 'v0.6.2', date: '2026-11-26', items: [
-    { type: 'besser', text: 'Neuer Schriftzug „StageMate“ (Schrift Over There) auf der Anmeldeseite und in der persönlichen Übersicht.' }
+    { type: 'neu', text: 'Ein Export-Fenster für die ganze App: Knopf „⤓ Exportieren“ oben auf jeder Seite, Formate als Kacheln mit einem Satz, wofür sie gut sind.' },
+    { type: 'neu', text: 'Kalender und Gigs als Kalenderdatei (.ics) fürs Handy, Google oder Outlook, dazu PDF und CSV.' },
+    { type: 'neu', text: 'Neue Exporte: Checklisten (PDF zum Abhaken, Text, CSV), Songs (PDF, CSV), Timetable und Finanzen zusätzlich als PDF.' },
+    { type: 'besser', text: 'Setlist: Bühnenmodus und „In Timetable eintragen“ stehen getrennt von den Exporten; „JSON importieren“ ist jetzt in der Übersicht aller Setlists.' },
+    { type: 'besser', text: 'Einheitliche Dateinamen, z. B. Setlist_Bergfest-Interlaken_2026-12-08.pdf.' }
   ] },
   { version: 'v0.6.1', date: '2026-11-26', items: [
     { type: 'neu', text: 'Kalender: Sonntage und Feiertage sind in der Monats- und Jahresansicht rot markiert; der Name des Feiertags steht im Hinweis beim Darüberfahren (allgemeine Schweizer Feiertage, kantonale fehlen noch).' },
