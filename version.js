@@ -1,16 +1,20 @@
-/*! StageMate v0.6.2 · Build 81 · 2026-11-26 */
+/*! StageMate v0.6.3 · Build 82 · 2026-11-26 */
 /* StageMate – Version, Build und Changelog
  * Wird von bump.sh automatisch angepasst (APP_VERSION, APP_BUILD, APP_BUILD_DATE).
  * Versionsregel: kleine Änderung = letzte Zahl +1, grössere Änderung = mittlere Zahl +1,
  * die erste Zahl bestimmt Housi.
  */
-const APP_VERSION = 'v0.6.2';
-const APP_BUILD = 81;
+const APP_VERSION = 'v0.6.3';
+const APP_BUILD = 82;
 const APP_BUILD_DATE = '2026-11-26';
 const APP_PHASE = 'Alpha';
 
 // Neueste Version zuerst. Typen: neu | besser | fix | intern
 const APP_CHANGELOG = [
+  { version: 'v0.6.3', date: '2026-11-26', items: [
+    { type: 'fix', text: 'Schriftzug „StageMate“ (Schrift Over There) auf der Anmeldeseite und in der persönlichen Übersicht wieder da; er war durch die Lieferung von v0.6.2 überschrieben worden.' },
+    { type: 'intern', text: 'Zwei Lieferungen hatten dieselbe Nummer v0.6.2 · Build 81 (Schriftzug und Export); beide sind jetzt in v0.6.3 zusammengeführt.' }
+  ] },
   { version: 'v0.6.2', date: '2026-11-26', items: [
     { type: 'neu', text: 'Ein Export-Fenster für die ganze App: Knopf „⤓ Exportieren“ oben auf jeder Seite, Formate als Kacheln mit einem Satz, wofür sie gut sind.' },
     { type: 'neu', text: 'Kalender und Gigs als Kalenderdatei (.ics) fürs Handy, Google oder Outlook, dazu PDF und CSV.' },
