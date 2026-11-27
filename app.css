@@ -1,4 +1,4 @@
-/*! StageMate v0.6.10 · Build 89 · 2026-11-27 */
+/*! StageMate v0.6.11 · Build 90 · 2026-11-27 */
   :root {
     --sidebar-w: 248px;
     --sidebar-w-collapsed: 68px;
@@ -1837,3 +1837,12 @@
 :root[data-theme="dark"] .ov-ic { box-shadow: 0 0 10px color-mix(in srgb, var(--sec, #e8a33d) 55%, transparent); }
 .hub-head { border-bottom: 1px solid transparent; }
 .hub-head > span:first-child { color: color-mix(in srgb, var(--sec, #e8a33d) 45%, var(--text)); }
+/* v0.6.11 Handy: Bildschirm bis unten nutzen, kleinerer Seitentitel */
+html, body { height: 100%; height: 100dvh; }
+#app { height: 100%; height: 100dvh; }
+@media (max-width: 760px) {
+  #app:not(.hidden) { padding-bottom: 0; }
+  .content { padding-bottom: 72px; }   /* Platz zum Scrollen über das Housi-Zeichen hinaus, statt fester schwarzer Streifen */
+  .topbar { height: 56px; gap: 8px; }
+  .topbar h1 { font-size: 17px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+}

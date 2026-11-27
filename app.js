@@ -1,4 +1,4 @@
-/*! StageMate v0.6.10 · Build 89 · 2026-11-27 */
+/*! StageMate v0.6.11 · Build 90 · 2026-11-27 */
 /* StageMate – App-Logik (Oberfläche, Register, Rechte) */
   // Version, Build und Changelog kommen aus js/version.js
   document.querySelectorAll('[data-app-version]').forEach(n => { n.textContent = APP_VERSION; n.title = `${APP_PHASE} · Build ${APP_BUILD} · ${APP_BUILD_DATE}`; });

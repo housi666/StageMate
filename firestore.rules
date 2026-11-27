@@ -1,5 +1,5 @@
 rules_version = '2';
-// StageMate v0.6.10 · Build 89 · 2026-11-27
+// StageMate v0.6.11 · Build 90 · 2026-11-27
 // StageMate – Firestore-Regeln (Stand v0.4.48)
 // - Namen von Profilen und Bands: nur erlaubte Zeichen, höchstens 100 Zeichen (okText/nameOk).
 // - Nur angemeldete Benutzer haben Zugriff.

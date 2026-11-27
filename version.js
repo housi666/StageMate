@@ -1,16 +1,20 @@
-/*! StageMate v0.6.10 · Build 89 · 2026-11-27 */
+/*! StageMate v0.6.11 · Build 90 · 2026-11-27 */
 /* StageMate – Version, Build und Changelog
  * Wird von bump.sh automatisch angepasst (APP_VERSION, APP_BUILD, APP_BUILD_DATE).
  * Versionsregel: kleine Änderung = letzte Zahl +1, grössere Änderung = mittlere Zahl +1,
  * die erste Zahl bestimmt Housi.
  */
-const APP_VERSION = 'v0.6.10';
-const APP_BUILD = 89;
+const APP_VERSION = 'v0.6.11';
+const APP_BUILD = 90;
 const APP_BUILD_DATE = '2026-11-27';
 const APP_PHASE = 'Alpha';
 
 // Neueste Version zuerst. Typen: neu | besser | fix | intern
 const APP_CHANGELOG = [
+  { version: 'v0.6.11', date: '2026-11-27', items: [
+    { type: 'besser', text: 'Handy: Der Inhalt geht jetzt bis an den unteren Bildschirmrand (vorher ein ungenutzter schwarzer Streifen); unten bleibt nur Platz zum Scrollen.' },
+    { type: 'besser', text: 'Handy: Seitentitel (z. B. „Übersicht“) kleiner, Kopfzeile flacher.' }
+  ] },
   { version: 'v0.6.10', date: '2026-11-27', items: [
     { type: 'neu', text: 'Mehr Farbe, trotzdem geordnet: Jeder Bereich hat eine feste Farbe (Kalender Blau, Gigs Bernstein, Checkliste Grün, Finanzen Petrol, Setlist Violett, Songs Magenta, Timetable Indigo, Verwaltung Pink).' },
     { type: 'neu', text: 'Seitenleiste: Symbole in der Bereichsfarbe, der aktive Bereich ist voll eingefärbt (im Dunkelmodus mit Leuchten). Kopfzeile mit leichtem Verlauf in der Farbe der Seite.' },
