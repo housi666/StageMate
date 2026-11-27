@@ -1,4 +1,4 @@
-/*! StageMate v0.6.6 · Build 85 · 2026-11-27 */
+/*! StageMate v0.6.7 · Build 86 · 2026-11-27 */
 /* StageMate – App-Logik (Oberfläche, Register, Rechte) */
   // Version, Build und Changelog kommen aus js/version.js
   document.querySelectorAll('[data-app-version]').forEach(n => { n.textContent = APP_VERSION; n.title = `${APP_PHASE} · Build ${APP_BUILD} · ${APP_BUILD_DATE}`; });
@@ -734,6 +734,7 @@
       const r = await Data.signUp(email, pw);
       rb.disabled = false;
       if (!r.ok) { pendingReg = null; return setMsg(msg, r.error, 'error'); }
+      rememberLogin(email, pw);
       return;   // finish() übernimmt: Profil speichern und in den Startbildschirm
     }
     for (const id in editRoles) {
@@ -7403,36 +7404,14 @@
     finish();
   }
 
-  // ----- E-Mail in drei Feldern: name @ domain . endung -----
-  const EMAIL_PARTS = ['fbEmailUser', 'fbEmailDomain', 'fbEmailTld'];
-  const emailValue = () => { const [u, d, t] = EMAIL_PARTS.map(id => $(id).value.trim()); return u && d && t ? `${u}@${d}.${t}` : ''; };
-  const emailValid = () => {
-    const [u, d, t] = EMAIL_PARTS.map(id => $(id).value.trim());
-    return /^[^\s@]+$/.test(u) && /^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$/i.test(d) && /^[a-z]{2,12}$/i.test(t);
-  };
-  function fillEmail(full) {
-    const at = full.lastIndexOf('@'); if (at < 0) return false;
-    const user = full.slice(0, at).trim(), host = full.slice(at + 1).trim();
-    const dot = host.lastIndexOf('.');
-    $('fbEmailUser').value = user;
-    $('fbEmailDomain').value = dot > 0 ? host.slice(0, dot) : host;
-    $('fbEmailTld').value = dot > 0 ? host.slice(dot + 1) : '';
-    $(dot > 0 ? 'fbEmailTld' : 'fbEmailDomain').focus();
-    return true;
+  // Browser (Chrome, Opera, Edge) anbieten, E-Mail und Passwort zu speichern; andere Browser erkennen das Formular selbst
+  function rememberLogin(email, pw) {
+    try { if (window.PasswordCredential && navigator.credentials) navigator.credentials.store(new PasswordCredential({ id: email, password: pw, name: email })).catch(() => {}); } catch (e) {}
   }
-  function setupEmailSplit() {
-    const [u, d, t] = EMAIL_PARTS.map(id => $(id));
-    // Ganze Adresse eingefügt oder „@“ getippt -> automatisch aufteilen
-    u.addEventListener('input', () => { if (u.value.includes('@')) { if (!fillEmail(u.value)) return; if (!u.value) d.focus(); } });
-    d.addEventListener('input', () => {
-      if (d.value.includes('@')) { fillEmail(u.value + d.value); return; }
-      const v = d.value, i = v.lastIndexOf('.');
-      if (i >= 0 && i === v.length - 1) { d.value = v.slice(0, -1); t.focus(); }   // „.“ am Ende springt ins letzte Feld
-    });
-    d.addEventListener('paste', e => { const txt = (e.clipboardData || window.clipboardData).getData('text'); if (txt && txt.includes('.')) { e.preventDefault(); const dot = txt.lastIndexOf('.'); d.value = txt.slice(0, dot).replace(/^@/, ''); t.value = txt.slice(dot + 1); t.focus(); } });
-    t.addEventListener('input', () => { t.value = t.value.replace(/[^a-z]/gi, ''); });
-    [d, t].forEach(x => x.addEventListener('keydown', e => { if (e.key === 'Backspace' && !x.value) { e.preventDefault(); (x === t ? d : u).focus(); } }));
-  }
+  // ----- E-Mail in einem Feld (v0.6.7): Browser und Passwort-Manager können Anmeldedaten speichern und einsetzen -----
+  const EMAIL_PARTS = ['fbEmail'];
+  const emailValue = () => ($('fbEmail').value || '').trim().toLowerCase();
+  const emailValid = () => /^[^\s@]+@[a-z0-9]([a-z0-9.-]*[a-z0-9])?\.[a-z]{2,12}$/i.test(emailValue());
 
   // ----- Konto-Anmeldung (nur Web-Version mit Firebase) -----
   let fbPane = null, fbTab = 'in';
@@ -7444,18 +7423,10 @@
       fbPane.innerHTML = `
         <div class="tabs"><button type="button" class="tab active" data-fbtab="in">Anmelden</button><button type="button" class="tab" data-fbtab="up">Registrieren</button></div>
         <h2 id="fbTitle">Willkommen zurück</h2>
-        <p class="hint" id="fbHint">Melde dich mit deiner E-Mail-Adresse und deinem Passwort an.</p>
+        <p class="hint" id="fbHint">Schon registriert? Melde dich mit deiner E-Mail-Adresse und deinem Passwort an. Neu hier? Dann oben auf „Registrieren“.</p>
         <form id="fbForm" novalidate>
-          <div class="field"><label for="fbEmailUser">E-Mail</label>
-            <div class="email-split">
-              <input id="fbEmailUser" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="name">
-              <span>@</span>
-              <input id="fbEmailDomain" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="beispiel">
-              <span>.</span>
-              <input id="fbEmailTld" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="ch" maxlength="12">
-            </div>
-          </div>
-          <div class="field"><label for="fbPw">Passwort</label><input id="fbPw" type="password" autocomplete="current-password"></div>
+          <div class="field"><label for="fbEmail">E-Mail</label><input id="fbEmail" name="email" type="email" inputmode="email" autocomplete="username" autocapitalize="off" spellcheck="false" placeholder="name@beispiel.ch"></div>
+          <div class="field"><label for="fbPw">Passwort</label><input id="fbPw" name="password" type="password" autocomplete="current-password"></div>
           <div class="field hidden" id="fbPw2Wrap"><label for="fbPw2">Passwort wiederholen</label><input id="fbPw2" type="password" autocomplete="new-password"></div>
           <button type="submit" class="btn" id="fbGo">Anmelden</button>
         </form>
@@ -7472,7 +7443,7 @@
         $('fbRegSlot').classList.toggle('hidden', !up);
         if (up) { $('fbRegSlot').appendChild(form); prepareForm(); } else $('registerSlot').appendChild(form);
         $('fbTitle').textContent = 'Willkommen zurück';
-        $('fbHint').textContent = 'Melde dich mit deiner E-Mail-Adresse und deinem Passwort an.';
+        $('fbHint').textContent = 'Schon registriert? Melde dich mit deiner E-Mail-Adresse und deinem Passwort an. Neu hier? Dann oben auf „Registrieren“.';
         $('fbPw2Wrap').classList.add('hidden');
         $('fbPw').autocomplete = 'current-password';
         // Angaben aus „Anmelden“ nicht in „Konto erstellen“ übernehmen (und umgekehrt)
@@ -7483,17 +7454,16 @@
       };
       fbPane.querySelectorAll('[data-fbtab]').forEach(b => b.addEventListener('click', () => setTab(b.dataset.fbtab)));
       enhancePw($('fbPw')); enhancePw($('fbPw2'));
-      setupEmailSplit();
       $('fbForm').addEventListener('submit', async e => {
         e.preventDefault();
         const email = emailValue(), pw = $('fbPw').value;
-        if (!EMAIL_PARTS.every(id => $(id).value.trim()) || !pw) return setMsg($('fbMsg'), 'Bitte E-Mail (alle drei Felder) und Passwort eingeben.', 'error');
+        if (!EMAIL_PARTS.every(id => $(id).value.trim()) || !pw) return setMsg($('fbMsg'), 'Bitte E-Mail und Passwort eingeben.', 'error');
         if (!emailValid()) return setMsg($('fbMsg'), 'Diese E-Mail-Adresse sieht nicht gültig aus.', 'error');
         $('fbGo').disabled = true; setMsg($('fbMsg'), 'Anmelden …');
         const r = await Data.signIn(email, pw);
         $('fbGo').disabled = false;
         if (!r.ok) setMsg($('fbMsg'), r.error, 'error');
-        else setMsg($('fbMsg'), 'Angemeldet – einen Moment …', 'ok');
+        else { rememberLogin(email, pw); setMsg($('fbMsg'), 'Angemeldet – einen Moment …', 'ok'); }
       });
       $('fbReset').addEventListener('click', async () => {
         const email = emailValue();

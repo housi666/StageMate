@@ -1,16 +1,20 @@
-/*! StageMate v0.6.6 · Build 85 · 2026-11-27 */
+/*! StageMate v0.6.7 · Build 86 · 2026-11-27 */
 /* StageMate – Version, Build und Changelog
  * Wird von bump.sh automatisch angepasst (APP_VERSION, APP_BUILD, APP_BUILD_DATE).
  * Versionsregel: kleine Änderung = letzte Zahl +1, grössere Änderung = mittlere Zahl +1,
  * die erste Zahl bestimmt Housi.
  */
-const APP_VERSION = 'v0.6.6';
-const APP_BUILD = 85;
+const APP_VERSION = 'v0.6.7';
+const APP_BUILD = 86;
 const APP_BUILD_DATE = '2026-11-27';
 const APP_PHASE = 'Alpha';
 
 // Neueste Version zuerst. Typen: neu | besser | fix | intern
 const APP_CHANGELOG = [
+  { version: 'v0.6.7', date: '2026-11-27', items: [
+    { type: 'besser', text: 'Anmelden: E-Mail in einem Feld statt in drei. Browser und Passwort-Manager können E-Mail und Passwort jetzt speichern und beim nächsten Mal selbst einsetzen.' },
+    { type: 'besser', text: 'Nach dem Registrieren und Anmelden bietet der Browser an, die Anmeldedaten zu speichern; Hinweis „Schon registriert? … Neu hier?“ auf der Anmeldeseite.' }
+  ] },
   { version: 'v0.6.6', date: '2026-11-27', items: [
     { type: 'besser', text: 'Icon „SM“: Der lange Strich des S ist kürzer, die linke Kante des M steht jetzt genau in der Mitte.' }
   ] },
