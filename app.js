@@ -1,4 +1,4 @@
-/*! StageMate v0.6.8 · Build 87 · 2026-11-27 */
+/*! StageMate v0.6.9 · Build 88 · 2026-11-27 */
 /* StageMate – App-Logik (Oberfläche, Register, Rechte) */
   // Version, Build und Changelog kommen aus js/version.js
   document.querySelectorAll('[data-app-version]').forEach(n => { n.textContent = APP_VERSION; n.title = `${APP_PHASE} · Build ${APP_BUILD} · ${APP_BUILD_DATE}`; });
@@ -7386,6 +7386,17 @@
   }
 
   // ================= Start =================
+  function showLoadError(e) {
+    const code = (e && e.code) || (e && e.message) || 'unbekannt';
+    console.error('Profil laden fehlgeschlagen', e);
+    showFbLogin(true);
+    $('fbTitle').textContent = 'Daten nicht erreichbar';
+    const blocked = /unavailable|offline|network|failed-precondition/i.test(code);
+    $('fbHint').textContent = 'Die Anmeldung hat geklappt, aber dein Profil konnte nicht aus der Datenbank geladen werden. ' +
+      (blocked ? 'Meist blockiert ein Werbe- oder Tracker-Blocker die Verbindung zu Firestore: Schalte ihn für diese Seite aus und lade neu.'
+               : 'Die Datenbank hat den Zugriff verweigert (Firestore-Regeln). Bitte melde das über Support.') + ' Fehlercode: ' + code;
+    if (!$('fbOut')) { const b = el('button', 'btn ghost', 'Abmelden'); b.type = 'button'; b.id = 'fbOut'; b.style.marginTop = '12px'; b.addEventListener('click', () => Data.signOut()); $('fbHint').after(b); }
+  }
   async function init() {
     $('registerSlot').appendChild(form);
     renderAuth();
@@ -7398,6 +7409,8 @@
       profile = s.exists ? await loadOwnContact(clone(s.data())) : null;
       bands = profile && Array.isArray(profile.bandIds) ? await loadBands(profile.bandIds) : {};
     } catch (e) {
+      // Web-Version: nicht still in den Demo-Modus wechseln (sonst entstehen Profile nur im Browser), sondern den Fehler zeigen
+      if (s0.mode === 'firebase') return showLoadError(e);
       if (s0.mode !== 'local') { const s1 = Data.useLocal(); rawDb = s1.db; db = withContacts(s1.db); uid = s1.uid; }
       profile = null; bands = {};
     }

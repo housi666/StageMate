@@ -1,16 +1,19 @@
-/*! StageMate v0.6.8 · Build 87 · 2026-11-27 */
+/*! StageMate v0.6.9 · Build 88 · 2026-11-27 */
 /* StageMate – Version, Build und Changelog
  * Wird von bump.sh automatisch angepasst (APP_VERSION, APP_BUILD, APP_BUILD_DATE).
  * Versionsregel: kleine Änderung = letzte Zahl +1, grössere Änderung = mittlere Zahl +1,
  * die erste Zahl bestimmt Housi.
  */
-const APP_VERSION = 'v0.6.8';
-const APP_BUILD = 87;
+const APP_VERSION = 'v0.6.9';
+const APP_BUILD = 88;
 const APP_BUILD_DATE = '2026-11-27';
 const APP_PHASE = 'Alpha';
 
 // Neueste Version zuerst. Typen: neu | besser | fix | intern
 const APP_CHANGELOG = [
+  { version: 'v0.6.9', date: '2026-11-27', items: [
+    { type: 'fix', text: 'Kann das Profil nach der Anmeldung nicht aus der Datenbank geladen werden, wechselt StageMate nicht mehr still in den Demo-Modus (dort entstanden Profile nur im Browser), sondern zeigt „Daten nicht erreichbar“ mit Fehlercode und Knopf „Abmelden“.' }
+  ] },
   { version: 'v0.6.8', date: '2026-11-27', items: [
     { type: 'fix', text: 'Entwickler-Anmeldung: Die Meldung unterscheidet jetzt „Dokument fehlt“ und „Firestore verweigert das Lesen“ (mit Fehlercode); die UID in der Meldung lässt sich markieren und kopieren.' }
   ] },
