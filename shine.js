@@ -1,4 +1,4 @@
-/*! StageMate v0.6.5 · Build 84 · 2026-11-27 */
+/*! StageMate v0.6.6 · Build 85 · 2026-11-27 */
 /* Glänzende Display-Knöpfe (Regelwerk): Farbe je Aufgabe, ein gemeinsamer Lichtstreifen für alle Knöpfe einer Seite. */
 (function () {
   'use strict';

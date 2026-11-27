@@ -1,16 +1,19 @@
-/*! StageMate v0.6.5 · Build 84 · 2026-11-27 */
+/*! StageMate v0.6.6 · Build 85 · 2026-11-27 */
 /* StageMate – Version, Build und Changelog
  * Wird von bump.sh automatisch angepasst (APP_VERSION, APP_BUILD, APP_BUILD_DATE).
  * Versionsregel: kleine Änderung = letzte Zahl +1, grössere Änderung = mittlere Zahl +1,
  * die erste Zahl bestimmt Housi.
  */
-const APP_VERSION = 'v0.6.5';
-const APP_BUILD = 84;
+const APP_VERSION = 'v0.6.6';
+const APP_BUILD = 85;
 const APP_BUILD_DATE = '2026-11-27';
 const APP_PHASE = 'Alpha';
 
 // Neueste Version zuerst. Typen: neu | besser | fix | intern
 const APP_CHANGELOG = [
+  { version: 'v0.6.6', date: '2026-11-27', items: [
+    { type: 'besser', text: 'Icon „SM“: Der lange Strich des S ist kürzer, die linke Kante des M steht jetzt genau in der Mitte.' }
+  ] },
   { version: 'v0.6.5', date: '2026-11-27', items: [
     { type: 'neu', text: 'Neues Icon: das Kürzel „SM“ in der Schrift Over There. Bernstein auf Dunkel im Browser-Tab und auf dem Handy-Startbildschirm, dunkel auf Bernstein als Logo in der App.' }
   ] },
