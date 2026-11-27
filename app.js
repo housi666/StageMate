@@ -1,4 +1,4 @@
-/*! StageMate v0.6.9 · Build 88 · 2026-11-27 */
+/*! StageMate v0.6.10 · Build 89 · 2026-11-27 */
 /* StageMate – App-Logik (Oberfläche, Register, Rechte) */
   // Version, Build und Changelog kommen aus js/version.js
   document.querySelectorAll('[data-app-version]').forEach(n => { n.textContent = APP_VERSION; n.title = `${APP_PHASE} · Build ${APP_BUILD} · ${APP_BUILD_DATE}`; });
@@ -1162,6 +1162,7 @@
     const reg = REGISTERS.find(r => r.id === page);
     if (reg && levelFor(currentBand, page) === 'hidden') page = 'overview';
     currentPage = page;
+    document.documentElement.dataset.page = page;   // Bereichsfarbe für Kopfzeile und Karten (v0.6.10)
     placeUI(page === 'home' ? 'hub' : page);
     navRecord(page);
     $('page-home').classList.toggle('hidden', page !== 'home');

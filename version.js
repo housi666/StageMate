@@ -1,16 +1,21 @@
-/*! StageMate v0.6.9 · Build 88 · 2026-11-27 */
+/*! StageMate v0.6.10 · Build 89 · 2026-11-27 */
 /* StageMate – Version, Build und Changelog
  * Wird von bump.sh automatisch angepasst (APP_VERSION, APP_BUILD, APP_BUILD_DATE).
  * Versionsregel: kleine Änderung = letzte Zahl +1, grössere Änderung = mittlere Zahl +1,
  * die erste Zahl bestimmt Housi.
  */
-const APP_VERSION = 'v0.6.9';
-const APP_BUILD = 88;
+const APP_VERSION = 'v0.6.10';
+const APP_BUILD = 89;
 const APP_BUILD_DATE = '2026-11-27';
 const APP_PHASE = 'Alpha';
 
 // Neueste Version zuerst. Typen: neu | besser | fix | intern
 const APP_CHANGELOG = [
+  { version: 'v0.6.10', date: '2026-11-27', items: [
+    { type: 'neu', text: 'Mehr Farbe, trotzdem geordnet: Jeder Bereich hat eine feste Farbe (Kalender Blau, Gigs Bernstein, Checkliste Grün, Finanzen Petrol, Setlist Violett, Songs Magenta, Timetable Indigo, Verwaltung Pink).' },
+    { type: 'neu', text: 'Seitenleiste: Symbole in der Bereichsfarbe, der aktive Bereich ist voll eingefärbt (im Dunkelmodus mit Leuchten). Kopfzeile mit leichtem Verlauf in der Farbe der Seite.' },
+    { type: 'neu', text: 'Kacheln auf Übersicht und Startbildschirm in ihrer Bereichsfarbe getönt, mit farbigem Symbol: hell nach Entwurf B, dunkel nach Entwurf D.' }
+  ] },
   { version: 'v0.6.9', date: '2026-11-27', items: [
     { type: 'fix', text: 'Kann das Profil nach der Anmeldung nicht aus der Datenbank geladen werden, wechselt StageMate nicht mehr still in den Demo-Modus (dort entstanden Profile nur im Browser), sondern zeigt „Daten nicht erreichbar“ mit Fehlercode und Knopf „Abmelden“.' }
   ] },

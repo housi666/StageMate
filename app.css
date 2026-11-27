@@ -1,4 +1,4 @@
-/*! StageMate v0.6.9 · Build 88 · 2026-11-27 */
+/*! StageMate v0.6.10 · Build 89 · 2026-11-27 */
   :root {
     --sidebar-w: 248px;
     --sidebar-w-collapsed: 68px;
@@ -1800,3 +1800,40 @@
 .sidebar.collapsed .app-version .vcred { display: none; }
 .hub-foot { text-align: center; font-size: 11.5px; color: var(--muted); margin: 18px 0 6px; }
 #devMsg { user-select: text; -webkit-user-select: text; overflow-wrap: anywhere; }
+
+/* ============ v0.6.10 Farben pro Bereich (Hell = Entwurf B, Dunkel = Entwurf D) ============ */
+.nav-item[data-page="team"], :root[data-page="team"], .ov-card[data-wid="roles"], .hub-sec[data-hub="profile"] { --sec: #ff2d78; }
+.nav-item[data-page="overview"], :root[data-page="overview"], .ov-card[data-wid="band"], .hub-sec[data-hub="bands"] { --sec: #e8a33d; }
+.nav-item[data-page="page2"], :root[data-page="page2"], .ov-card[data-wid="event"], .hub-sec[data-hub="agenda"], .hub-sec[data-hub="mycal"] { --sec: #2a6bff; }
+.nav-item[data-page="page3"], :root[data-page="page3"], .ov-card[data-wid="gig"], .hub-sec[data-hub="nextgig"] { --sec: #e8a33d; }
+.nav-item[data-page="page4"], :root[data-page="page4"], .ov-card[data-wid="task"], .hub-sec[data-hub="tasks"] { --sec: #22b04a; }
+.nav-item[data-page="page5"], :root[data-page="page5"] { --sec: #1ba3a8; }
+.nav-item[data-page="page6"], :root[data-page="page6"], .hub-sec[data-hub="quick"] { --sec: #9040f0; }
+.nav-item[data-page="page7"], :root[data-page="page7"] { --sec: #d01fd0; }
+.nav-item[data-page="page8"], :root[data-page="page8"], .ov-card[data-wid="timetable"], .ov-card[data-wid="clock"] { --sec: #4b3fd0; }
+.hub-sec[data-hub="events"] { --sec: #1ba3a8; }
+.hub-sec[data-hub="settings"] { --sec: #7d8296; }
+:root[data-page="home"] { --sec: #e8a33d; }
+/* Seitenleiste: Symbol in der Bereichsfarbe, aktiver Bereich voll eingefärbt */
+.sidebar .nav-item[data-page] svg { stroke: var(--sec); }
+.sidebar .nav-item[data-page].active { background: var(--sec); color: #15161c; box-shadow: none; font-weight: 700; }
+.sidebar .nav-item[data-page].active svg { stroke: #15161c; }
+:root[data-theme="dark"] .sidebar .nav-item[data-page].active { box-shadow: 0 0 16px color-mix(in srgb, var(--sec) 45%, transparent); }
+/* Kopfzeile: leichter Verlauf in der Farbe des Bereichs */
+.topbar { background: linear-gradient(90deg, color-mix(in srgb, var(--sec, #e8a33d) 16%, var(--surface)), var(--surface) 75%); }
+/* Kacheln: getönt in der Farbe ihres Bereichs */
+.ov-card, .hub-sec, .content .card, .content .panel {
+  background: color-mix(in srgb, var(--sec, #e8a33d) 7%, var(--surface));
+  border-color: color-mix(in srgb, var(--sec, #e8a33d) 24%, var(--border));
+}
+.content .card, .content .panel { background: color-mix(in srgb, var(--sec, #e8a33d) 4%, var(--surface)); }
+:root[data-theme="dark"] .ov-card, :root[data-theme="dark"] .hub-sec, :root[data-theme="dark"] .content .card, :root[data-theme="dark"] .content .panel {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--sec, #e8a33d) 15%, var(--surface)), color-mix(in srgb, var(--sec, #e8a33d) 4%, var(--surface)) 70%);
+  border-color: color-mix(in srgb, var(--sec, #e8a33d) 32%, var(--border));
+  box-shadow: 0 10px 28px -18px color-mix(in srgb, var(--sec, #e8a33d) 60%, transparent);
+}
+.ov-card-h { color: color-mix(in srgb, var(--sec, #e8a33d) 55%, var(--text)); }
+.ov-ic { width: 28px; height: 28px; border-radius: 8px; background: var(--sec, #e8a33d); align-items: center; justify-content: center; font-size: 14px; color: #15161c; flex: none; }
+:root[data-theme="dark"] .ov-ic { box-shadow: 0 0 10px color-mix(in srgb, var(--sec, #e8a33d) 55%, transparent); }
+.hub-head { border-bottom: 1px solid transparent; }
+.hub-head > span:first-child { color: color-mix(in srgb, var(--sec, #e8a33d) 45%, var(--text)); }

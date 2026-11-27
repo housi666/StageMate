@@ -1,4 +1,4 @@
-/*! StageMate v0.6.9 · Build 88 · 2026-11-27 */
+/*! StageMate v0.6.10 · Build 89 · 2026-11-27 */
 /* StageMate Web – Verbindung zu Firebase (Projekt stagemate-d0a66).
  * Diese Werte sind nicht geheim; geschützt werden die Daten durch die Firestore-Regeln. */
 window.STAGEMATE_FIREBASE = {
