@@ -1,4 +1,4 @@
-/*! StageMate v0.6.7 · Build 86 · 2026-11-27 */
+/*! StageMate v0.6.8 · Build 87 · 2026-11-27 */
 /* StageMate – App-Logik (Oberfläche, Register, Rechte) */
   // Version, Build und Changelog kommen aus js/version.js
   document.querySelectorAll('[data-app-version]').forEach(n => { n.textContent = APP_VERSION; n.title = `${APP_PHASE} · Build ${APP_BUILD} · ${APP_BUILD_DATE}`; });
@@ -7201,7 +7201,8 @@
         if (!r.ok) {
           const mail = devEmail(id);
           let t = r.error;
-          if (r.uid) t = `Anmeldung bei Firebase ok, aber das Konto ist nicht als Entwickler freigegeben. Lege in Firestore die Sammlung „developers“ mit einem Dokument an, dessen ID genau diese UID ist: ${r.uid}`;
+          if (r.uid && r.readCode) t = `Anmeldung bei Firebase ok, aber Firestore verweigert das Lesen von developers/${r.uid} [${r.readCode}]. Das Dokument kann trotzdem da sein: Prüfe in der Firebase-Konsole unter Firestore → Regeln, ob dort die aktuellen Regeln aus firestore.rules veröffentlicht sind (Abschnitt „match /developers/{uid}“).`;
+          else if (r.uid) t = `Anmeldung bei Firebase ok, aber unter „developers“ gibt es kein Dokument mit genau dieser ID. Kopiere die UID und lege das Dokument damit an (Gross-/Kleinschreibung, l/I und O/0 beachten): ${r.uid}`;
           else if (['auth/invalid-credential', 'auth/invalid-login-credentials', 'auth/user-not-found', 'auth/wrong-password'].includes(r.code))
             t = `Firebase kennt das Konto ${mail} nicht oder das Passwort ist anders. Prüfe in der Firebase-Konsole unter Authentication, ob es genau dieses Konto gibt (sonst „Nutzer hinzufügen“), oder setze dort das Passwort neu.`;
           else if (r.code === 'auth/user-disabled') t = `Das Konto ${mail} ist in Firebase deaktiviert.`;

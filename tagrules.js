@@ -1,4 +1,4 @@
-/*! StageMate v0.6.7 · Build 86 · 2026-11-27 */
+/*! StageMate v0.6.8 · Build 87 · 2026-11-27 */
 /* StageMate – Regeln für den automatischen Band-Tag
  * Diese Datei darfst du selbst anpassen (z.B. direkt auf GitHub bearbeiten).
  *

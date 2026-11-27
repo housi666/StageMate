@@ -1,4 +1,4 @@
-/*! StageMate v0.6.7 · Build 86 · 2026-11-27 */
+/*! StageMate v0.6.8 · Build 87 · 2026-11-27 */
 /* StageMate – Datenschicht
  * ------------------------------------------------------------
  * Die einzige Stelle, die weiss, WO die Daten liegen.
@@ -260,7 +260,9 @@
       devApp = firebase.apps.find(a => a.name === 'dev') || firebase.initializeApp(fbConfig(), 'dev');
       const cred = await devApp.auth().signInWithEmailAndPassword(email, password);
       const fs = devApp.firestore();
-      const ok = await fs.doc('developers/' + cred.user.uid).get().catch(() => null);
+      let readErr = null;
+      const ok = await fs.doc('developers/' + cred.user.uid).get().catch(e => { readErr = e; return null; });
+      if (readErr) { await devApp.auth().signOut().catch(() => {}); return { ok: false, error: 'Firestore verweigert das Lesen der Freigabe.', uid: cred.user.uid, readCode: readErr.code || 'unbekannt' }; }
       if (!ok || !ok.exists) { await devApp.auth().signOut().catch(() => {}); return { ok: false, error: 'Dieses Konto ist nicht als Entwickler freigegeben.', uid: cred.user.uid }; }
       return { ok: true, db: makeFirebaseDb(fs), uid: cred.user.uid };
     } catch (e) { return { ok: false, error: fbError(e), code: e && e.code }; }
