@@ -1,16 +1,19 @@
-/*! StageMate v0.6.12 · Build 91 · 2026-11-27 */
+/*! StageMate v0.6.13 · Build 92 · 2026-11-27 */
 /* StageMate – Version, Build und Changelog
  * Wird von bump.sh automatisch angepasst (APP_VERSION, APP_BUILD, APP_BUILD_DATE).
  * Versionsregel: kleine Änderung = letzte Zahl +1, grössere Änderung = mittlere Zahl +1,
  * die erste Zahl bestimmt Housi.
  */
-const APP_VERSION = 'v0.6.12';
-const APP_BUILD = 91;
+const APP_VERSION = 'v0.6.13';
+const APP_BUILD = 92;
 const APP_BUILD_DATE = '2026-11-27';
 const APP_PHASE = 'Alpha';
 
 // Neueste Version zuerst. Typen: neu | besser | fix | intern
 const APP_CHANGELOG = [
+  { version: 'v0.6.13', date: '2026-11-27', items: [
+    { type: 'besser', text: 'Schriftzug „StageMate“ bunt: Farbverlauf aus den Bereichsfarben (Bernstein, Pink, Violett, Blau, Petrol) auf der Anmeldeseite und im Startbildschirm.' }
+  ] },
   { version: 'v0.6.12', date: '2026-11-27', items: [
     { type: 'fix', text: 'Handy: Scrollen und Verschieben der Registerkarten in der Seitenleiste beissen sich nicht mehr. Wischen scrollt, Verschieben erst nach langem Drücken (mit kurzem Vibrieren).' },
     { type: 'fix', text: 'Seitenleiste: Die Liste der Registerkarten scrollt, wenn sie nicht ganz auf den Bildschirm passt (vorher abgeschnitten).' }

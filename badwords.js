@@ -1,4 +1,4 @@
-/*! StageMate v0.6.12 · Build 91 · 2026-11-27 */
+/*! StageMate v0.6.13 · Build 92 · 2026-11-27 */
 /* StageMate – gesperrte Wörter für Nicknames (und Bandnamen)
  * Diese Datei darfst du selbst anpassen (z.B. direkt auf GitHub bearbeiten).
  * Alles in Kleinbuchstaben eintragen. Gross-/Kleinschreibung, Umlaute und
