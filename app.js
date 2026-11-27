@@ -1,4 +1,4 @@
-/*! StageMate v0.6.13 · Build 92 · 2026-11-27 */
+/*! StageMate v0.6.14 · Build 93 · 2026-11-27 */
 /* StageMate – App-Logik (Oberfläche, Register, Rechte) */
   // Version, Build und Changelog kommen aus js/version.js
   document.querySelectorAll('[data-app-version]').forEach(n => { n.textContent = APP_VERSION; n.title = `${APP_PHASE} · Build ${APP_BUILD} · ${APP_BUILD_DATE}`; });
@@ -25,7 +25,8 @@
   REGISTERS.forEach(r => PAGE_TITLES[r.id] = r.title);
 
   const logo = document.getElementById('logoTpl');
-  document.querySelectorAll('.logo-slot').forEach(s => s.replaceWith(logo.content.cloneNode(true)));
+  document.querySelectorAll('.logo-slot').forEach((s, i) => { const f = logo.content.cloneNode(true), g = f.querySelector('linearGradient');
+    if (g) { g.id = 'smgSlot' + i; f.querySelectorAll('[fill="url(#smgLogo)"]').forEach(x => x.setAttribute('fill', `url(#smgSlot${i})`)); } s.replaceWith(f); });
 
   const $ = id => document.getElementById(id);
   const ls = {
@@ -4277,7 +4278,10 @@
 
 
   // ----- Bandlogo (Admin und Organisation bearbeiten, alle sehen es) -----
-  const defaultLogo = () => document.getElementById('logoTpl').content.cloneNode(true);
+  let logoSeq = 0;
+  // Jede Kopie bekommt eine eigene Verlaufs-ID (sonst bleibt das SM in ausgeblendeten Bereichen ohne Farbe)
+  const defaultLogo = () => { const f = document.getElementById('logoTpl').content.cloneNode(true), id = 'smgLogo' + (++logoSeq);
+    const g = f.querySelector('linearGradient'); if (g) { g.id = id; f.querySelectorAll('[fill="url(#smgLogo)"]').forEach(x => x.setAttribute('fill', `url(#${id})`)); } return f; };
   function logoNode(src) {
     const img = el('img'); img.src = src; img.alt = 'Bandlogo'; return img;
   }
