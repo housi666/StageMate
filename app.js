@@ -1,4 +1,4 @@
-/*! StageMate v0.6.11 · Build 90 · 2026-11-27 */
+/*! StageMate v0.6.12 · Build 91 · 2026-11-27 */
 /* StageMate – App-Logik (Oberfläche, Register, Rechte) */
   // Version, Build und Changelog kommen aus js/version.js
   document.querySelectorAll('[data-app-version]').forEach(n => { n.textContent = APP_VERSION; n.title = `${APP_PHASE} · Build ${APP_BUILD} · ${APP_BUILD_DATE}`; });
@@ -1832,20 +1832,35 @@
     try { await db.doc('members/' + uid).set(clone(profile)); } catch (e) { flash('Reihenfolge konnte nicht gespeichert werden', true); }
   }
   let drag = null;
+  // Maus: sofort ziehen. Touch (v0.6.12): normales Wischen scrollt, Verschieben erst nach langem Drücken (0,4 s)
+  const blockNavTouch = e => { if (drag && drag.active) e.preventDefault(); };
+  function startNavDrag(pointerId) {
+    if (!drag) return;
+    drag.active = true;
+    drag.item.classList.add('dragging');
+    nav.classList.add('sorting');
+    try { drag.item.setPointerCapture(pointerId); } catch (err) {}
+    if (drag.touch) { window.addEventListener('touchmove', blockNavTouch, { passive: false }); try { navigator.vibrate && navigator.vibrate(15); } catch (err) {} }
+  }
   nav.addEventListener('pointerdown', e => {
     const item = e.target.closest('.nav-item[data-page]');
     if (!item || e.button > 0) return;
-    drag = { item, startY: e.clientY, offset: 0, active: false, id: e.pointerId };
+    const touch = e.pointerType === 'touch' || e.pointerType === 'pen';
+    drag = { item, startY: e.clientY, startX: e.clientX, offset: 0, active: false, id: e.pointerId, touch, timer: null };
+    if (touch) drag.timer = setTimeout(() => { if (drag && !drag.active) startNavDrag(e.pointerId); }, 400);
   });
+  nav.addEventListener('contextmenu', e => { if (drag && drag.touch) e.preventDefault(); });
   nav.addEventListener('pointermove', e => {
     if (!drag || e.pointerId !== drag.id) return;
     const dy = e.clientY - drag.startY;
     if (!drag.active) {
+      if (drag.touch) {
+        // vor dem langen Drücken bewegt: das ist Scrollen, kein Verschieben
+        if (Math.abs(dy) > 8 || Math.abs(e.clientX - drag.startX) > 8) { clearTimeout(drag.timer); drag = null; }
+        return;
+      }
       if (Math.abs(dy) < 6) return;
-      drag.active = true;
-      drag.item.classList.add('dragging');
-      nav.classList.add('sorting');
-      try { drag.item.setPointerCapture(e.pointerId); } catch (err) {}
+      startNavDrag(e.pointerId);
     }
     e.preventDefault();
     let y = dy - drag.offset;
@@ -1859,6 +1874,8 @@
   });
   function endDrag(e) {
     if (!drag || (e && e.pointerId !== drag.id)) return;
+    clearTimeout(drag.timer);
+    window.removeEventListener('touchmove', blockNavTouch);
     if (drag.active) {
       drag.item.style.transform = '';
       drag.item.classList.remove('dragging');
@@ -6892,6 +6909,7 @@
         T('🪟', 'Fenster', 'Die Übersicht zeigt Band, deine Rollen, Uhr & Datum, deinen nächsten Gig, deinen nächsten Termin und deinen nächsten Checklisten-Punkt (was du übernommen hast). Ein Klick auf den Knopf im Fenster springt direkt dorthin. Pack ein Fenster und zieh es an einen anderen Platz – auf dem Handy kurz gedrückt halten. Die Anordnung wird in deinem Profil gespeichert.'),
         T('⚙', 'Anpassen', 'Oben rechts „⚙ Anpassen“: Fenster ein- und ausschalten. Als Info stehen dort die Zeitzone und – wenn du ihn freigibst – dein Standort. Zeitformat, Uhr (digital oder analog) und Datumsformat stellst du in den Einstellungen unter „Uhr & Datum“ ein.'),
         T('🧭', 'Registerkarten', 'Kalender für alle Termine, Gigs für eure Auftritte mit allen Details, Checkliste für Aufgaben rund um Gigs und Termine, Finanzen für Einnahmen und Ausgaben, Verwaltung für Mitglieder, Rollen und Rechte.'),
+        T('⠿', 'Registerkarten verschieben', 'Mit der Maus: Registerkarte in der Seitenleiste packen und an eine andere Stelle ziehen. Auf dem Handy: kurz gedrückt halten, bis es vibriert, dann ziehen. Normales Wischen scrollt die Seitenleiste.'),
       ],
       page2: [
         T('📤', 'Export', '„⤓ Exportieren“ oben öffnet das Export-Fenster: Kalenderdatei (.ics) für Handy, Google oder Outlook, dazu PDF und CSV. Enthalten sind die Termine von 90 Tagen zurück bis ein Jahr voraus.'),
